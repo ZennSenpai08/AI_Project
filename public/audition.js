@@ -1,0 +1,14 @@
+export const auditionCases = [
+  ['Casual English', 'warm', 'Hey, you made it. Take a breath. What was the best tiny moment of your day?'],
+  ['Philippine English', 'warm', 'Let’s meet after lunch, then take the jeepney to the café near the barangay hall.'],
+  ['Filipino', 'curious', 'Kumusta ang araw mo? Kung pagod ka, puwede muna tayong magpahinga. Hindi naman kailangang madaliin ang lahat.'],
+  ['Mid-sentence Taglish', 'playful', 'I was going to be productive, kaso ang cozy ng ulan. One small task muna, then we can celebrate.'],
+  ['Names and places', 'calm', 'Sina Luningning at Marikit ay magkikita sa Quezon City bago pumunta sa Baguio at Parañaque.'],
+  ['Numbers and dates', 'calm', 'November 11, 2026. Alas tres y medya. Isang libo at limang daang piso, o 1,500 pesos.'],
+  ['Technical words', 'curious', 'The API request timed out. Tingnan natin ang WebSocket connection, database transaction, at asynchronous callback.'],
+  ['Playful banter', 'playful', 'Forty browser tabs? May sarili nang barangay ang laptop mo. Hehe. Let’s rescue one tab at a time.'],
+  ['Serious conversation', 'concerned', 'Ang bigat ng pinagdaanan mo. You don’t have to explain everything right now. I can listen, and we can take this slowly.'],
+  ['Question and interruption', 'curious', 'Would you like to talk about it, or—oh, go ahead. I’m listening.'],
+  ['Short response', 'excited', 'Uy, you did it! That little win counts.'],
+  ['Long response', 'calm', 'Let’s make the evening a little gentler. Put down the task you can finish tomorrow. Drink some water if you need it. Maybe choose one small thing that would make your space more comfortable. Hindi kailangan maging perfect ang gabi. A quiet moment is enough. When you’re ready, we can think about what comes next.'],
+];
