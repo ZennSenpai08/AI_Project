@@ -1,78 +1,174 @@
-# Hiraya AI
+# Zyrah — Expressive AI Desktop Companion
 
-An original Filipino AI companion with persistent conversations, an explicit memory notebook, streaming text, interruptible voice, and an animated browser avatar. The character imagines a little night studio where small wins become paper stars. She is transparent about being AI.
+An original virtual companion who talks, listens, remembers useful context, and expresses herself through her voice, face, and body.
 
-**Chat runs immediately without dependencies or keys in a clearly labeled, scripted demo.** Real free-form conversation and cloud voice require the provider configuration below. Demo responses are deterministic examples, not a local language model. The selected Mao Live2D avatar requires the separate runtime setup below.
+**Project direction:** Windows-first floating desktop companion with natural English–Tagalog conversation, persistent personality, expressive speech, and coordinated character animation.
 
-## Run on Windows
+> Status: development specification. These documents describe the intended product; they do not certify that any feature is implemented. The existing repository has not been audited for this document. Confirm capabilities in code and on the target machine before marking them complete.
 
-Requires **Node.js 22.18.0 or newer** with `node:sqlite`. This project was actually checked on Windows with Node 22.18.0 and PowerShell. No Python environment, Docker, GPU, npm installation, or build step is needed for the core app.
+## Meet Zyrah
 
-```powershell
-cd C:\Users\Romcill\Desktop\Project
-npm start
-```
+Zyrah is a warm, playful, thoughtful original character. She enjoys light teasing and situational Filipino humor, switches naturally between English and Tagalog, and can settle into a serious conversation without losing her identity.
 
-Open **http://127.0.0.1:3210**. Stop with Ctrl+C. `npm run dev` restarts the backend when source changes; reload the browser for frontend changes. Node 22 prints an experimental SQLite warning; it does not prevent startup.
+Her manner should feel conversational: varied sentence lengths, appropriate pauses, restrained laughter, and responses that follow what the user actually said. Avoid repetitive greetings, constant catchphrases, forced jokes, excessive fillers, and formal assistant-style speeches during casual chat. She remains honest about being an AI when asked.
 
-For live AI, copy the example once and edit it locally:
+Neuro-sama, character-chat experiences, and Filipino VTuber delivery are broad inspiration. Zyrah has her own identity, appearance, dialogue, and voice; she does not claim to be Ninomae Ina'nis, Pan VTuber, or a member of their organizations.
 
-```powershell
-Copy-Item .env.example .env
-notepad .env
-```
+## Intended experience
 
-Set `CHAT_PROVIDER=openai` and your `OPENAI_API_KEY`. The default chat adapter uses `gpt-4.1-mini`. Restart the app. Do not put keys into the browser or commit `.env`.
+1. Launch Zyrah and see her character floating on the desktop.
+2. Drag her to a comfortable position. A click opens the chat panel; dragging does not accidentally open it.
+3. Continue the current conversation or browse previews of previous conversations.
+4. Type or enable the microphone to talk. Start with push-to-talk; add hands-free conversation after reliable audio handling.
+5. Zyrah speaks while her face, gaze, mouth, and gestures follow the meaning and timing of her response.
+6. Hide her through the tray. Microphone capture, speech playback, and pending reactions stop.
+7. Restore her through the tray or a configurable shortcut. The microphone stays off until explicitly re-enabled.
 
-For a Filipino synthetic voice, configure `TTS_PROVIDER=azure`, `AZURE_SPEECH_KEY`, and `AZURE_SPEECH_REGION`. The default is `fil-PH-BlessicaNeural`. Browser device voices work without an app key, but available accents and languages depend on the device. OpenAI transcription uses configurable `STT_MODEL=gpt-transcribe` when a key is present. See [PROVIDER_SETUP.md](PROVIDER_SETUP.md) for exact configurations, API references, model availability caveats, and the optional local Ollama adapter.
+## Planned features
 
-`APP_NAME` and `CHARACTER_NAME` rename the product and character. The existing package name `Zy-ai` was preserved. Stable personality and original example dialogues live in [characters/hiraya.json](characters/hiraya.json).
+All entries below are planned until implementation and verification establish otherwise.
 
-## Use
+| Area | Requirement |
+| --- | --- |
+| Desktop | Transparent, frameless, draggable character window |
+| Chat | Separate panel with current thread, history previews, search, and persistent messages |
+| Window controls | Always-on-top toggle, saved position, display-boundary recovery |
+| Tray | Show/hide, open chat, microphone control, mute speech, settings, quit |
+| Restore | Configurable global shortcut; proposed default `Ctrl+Alt+C`, with conflict handling |
+| Voice | STT, TTS, adjustable voice settings, interruption and cancellation |
+| Language | English, Tagalog, and contextual Taglish |
+| Character | Facial expressions, lip sync, gaze, blinking, gestures, and subtle idle motion |
+| Memory | Conversation summaries and editable, source-linked personal memories |
+| Privacy | Local-first storage, clear cloud-provider disclosure, no raw-audio retention by default |
+| Reliability | Text fallback, provider failure recovery, clean shutdown and data migrations |
 
-The user-supplied `mao_en` folder is now the default visual model. Follow [MODEL_SETUP.md](MODEL_SETUP.md) to install the pinned browser renderer and supply the official Cubism Core. Until then, the avatar panel shows a setup message; chat remains usable. `AVATAR_PROVIDER=svg` explicitly selects the earlier SVG. Mao artwork is credited to Live2D Inc.; it is separate from Hiraya's original personality and voice.
+Transparent areas require deliberate hit testing or click-through handling. Transparency alone does not make clicks pass through to another application.
 
-- Type a message; Enter sends, Shift+Enter adds a line. Model text streams as it arrives. Demo text arrives at once.
-- **Dictate** uses browser recognition to fill an editable draft. Browser recognition may send audio to the browser vendor.
-- **Record** starts a bounded push-to-talk style recording; **Finish** stops it. Cloud transcription fills the draft for review. Maximum 20 seconds. An OpenAI key is required for this mode.
-- **Start voice conversation** enables hands-free recognition and automatic replies. Speak to interrupt; **Stop reply** or Esc cancels generation and speech. **Mute** silences replies while leaving an active microphone on; end the voice conversation to turn the microphone off.
-- Use headphones when testing interruption. Energy-based VAD can mistake speakers or background voices for an interruption. Configure pause duration and noise threshold in settings.
-- Save suggested memories explicitly, or add notes yourself. Edit or forget them in the notebook. `Disable memory` pauses retrieval and suggestions; `Enable memory` resumes them. `Forget this` / `That is incorrect` opens the notebook so you can choose the correct note.
-- Settings include language, speed, volume, voice audition, memory controls, document ingestion, usage, export, and local-data erasure.
-- Reference documents accept plain `.txt` / `.md`, up to 12,000 characters / 48 KB, maximum 20 documents. Cloud embeddings are optional; default retrieval is explicitly lexical.
-- The browser avatar responds to emotions and cloud playback amplitude. `/avatar.html` is a transparent overlay for a same-origin browser tab. Optional VTube Studio connection is under settings; it remains off until requested.
+## Expressions are performances
 
-## Verify
+Emoji express intent; Zyrah performs that intent through her model. Floating symbols are optional secondary effects, never the only implementation of an emotional reaction.
 
-```powershell
-npm run check
-npm test
-node scripts/benchmark.js
-```
+| Cue | Proposed performance |
+| --- | --- |
+| 👋 Greeting | Smile, lift forearm, wave wrist, then smoothly relax the arm |
+| 😂 Amusement | Lift cheeks, narrow eyes, lean slightly, move shoulders subtly, and laugh when appropriate |
+| 🤔 Thinking | Glance aside, tilt head, and optionally bring a hand toward the chin |
+| 😳 Embarrassment | Blush, briefly look away, soften posture, and hesitate naturally |
+| 😏 Teasing | Small asymmetric smile, sideways head tilt, playful delivery |
+| 🥺 Concern | Soften eyes and brows, lean slightly forward, speak attentively |
+| 😤 Playful annoyance | Small pout or brow change with a brief pose, only when context supports it |
+| 🎉 Celebration | Bright smile and restrained celebratory hand movement |
+| 😴 Sleepiness | Lower eyelids, relaxed posture, optional yawn animation |
 
-Core tests require no external dependencies, credentials, or network. Browser tests are a separate optional package:
+Interpret the whole message: “I failed my exam 😂” should not mechanically trigger laughter. Unknown emoji map to a supported contextual reaction or a neutral fallback; unique animation for every Unicode emoji is not promised.
 
-```powershell
-npm --prefix tests/browser install
-npm --prefix tests/browser test
-```
+### Animation requirements
 
-On Windows these use installed Microsoft Edge. On other systems install the Playwright Chromium binary from `tests/browser` with `npx playwright install chromium`. The browser test server uses **port 3211** and `.test-data/browser`, never the normal database. Playwright is pinned to 1.58.2. Installation and execution were blocked in this environment; do not interpret supplied tests as passed browser QA.
+- Blend idle, gaze, emotion, gesture, and speech layers smoothly.
+- Give gestures an entrance, a main movement, and a relaxed exit.
+- Use restrained variation and cooldowns so gestures do not repeat constantly.
+- Synchronize performance cues with audio playback, not the arrival of generated text.
+- Prevent expressions from fighting with blinking or mouth shapes.
+- Stop or settle gestures when speech is interrupted; never replay canceled cues.
 
-## Data and boundaries
+A VRM model is the initial recommendation for flexible body gestures. Inspect its actual skeleton, facial shapes, and usage terms before adoption. Standard expressions are not guaranteed to exist. Blush, heart eyes, tears, and exaggerated anime effects may need custom art or model work. Live2D remains an alternative when a suitable rig already exists.
 
-SQLite is created automatically at `data/hiraya.sqlite`, with transactional schema setup and upgrade from the initial schema. This is a **single-user, loopback-only application**, not an authenticated public service. Records carry an owner boundary for future work; shared process configuration and settings still assume one user. Do not expose it through a public tunnel or change its host binding without adding proper authentication, per-user settings, authorization, and HTTPS.
+## Reusable projects to evaluate
 
-The app does not store raw microphone recordings. Cloud providers receive the data needed for their requests: recent messages and selected memories/documents for chat, recorded utterances for transcription, reply text for synthesis, and documents/query text for configured cloud embeddings. Provider retention is separate from local deletion. Local SQLite is unencrypted; protect the computer and backups.
+These are candidates and references, not installed dependencies. Pin compatible versions and verify licenses for the selected release, model weights, voices, motions, and assets.
 
-Deleting a memory removes it from retrieval and clears derived summaries. Matching/source messages are excluded from future summaries. Original chat messages remain visible and can still be in recent conversation context; delete their conversation if you want that source removed too. Deleting a document removes its chunks and vectors. Exports and your own backups are not automatically erased. Daily aggregate usage counters remain after “erase all” to prevent resetting usage ceilings; they contain no dialogue.
+| Project | Proposed use | Repository license reported during planning |
+| --- | --- | --- |
+| [AIRI](https://github.com/moeru-ai/airi) | First desktop-companion foundation to evaluate | MIT |
+| [Amica](https://github.com/semperai/amica) | Reference for conversational emotion-to-avatar mapping | Mostly MIT; assets separate |
+| [three-vrm](https://github.com/pixiv/three-vrm) | VRM rendering and animation | MIT |
+| [VoiceStudio](https://github.com/debpalash/VoiceStudio) | Local voice auditioning, design, cloning, and speech API | AGPL-3.0; engines and assets separate |
+| [VoxCPM](https://github.com/OpenBMB/VoxCPM) | Candidate expressive TTS; evaluate VoxCPM2 for Tagalog | Apache-2.0 repository; check weights |
+| [OmniVoice](https://github.com/k2-fsa/OmniVoice) | Alternative voice-design and cloning candidate | Apache-2.0 repository; check weights |
+| [faster-whisper](https://github.com/SYSTRAN/faster-whisper) | Local speech recognition | MIT |
+| [Silero VAD](https://github.com/snakers4/silero-vad) | Speech boundary detection | Verify selected release |
+| [Ollama](https://github.com/ollama/ollama) | Optional local language-model runner | Verify runtime and each model separately |
 
-## Backup and restore
+Evaluate one foundation before integrating. Do not combine entire competing applications. If AIRI is adopted, preserve its existing framework and conventions. If the current project already provides a strong desktop foundation, extend it rather than rewriting it unnecessarily.
 
-Stop the server before copying the complete `data` directory, including any SQLite WAL/SHM files. Restore into a **new empty directory**, set `DATA_DIR` to it, and start the server. This avoids overwriting current data. UI JSON export is readable archival data; it is not an import format. Keep `.env` separately and securely. Do not share real database copies in bug reports.
+Free software does not guarantee free cloud inference, fast CPU generation, or unrestricted redistribution of every bundled asset. Review license obligations before copying or distributing code; retain required notices.
 
-## What was verified
+## Voice strategy
 
-See [TEST_REPORT.md](TEST_REPORT.md). Local startup, syntax, 48 automated tests, provider request-contract mocks, 100-turn deterministic continuity, and a local benchmark passed. **Live cloud calls, real microphone/speaker operation, Filipino accent quality, Live2D rendering, visual browser QA, and a real VTube Studio model were not verified.** No credentials were available; browser automation was unavailable and npm registry access was blocked.
+Zyrah's target voice is an original, warm adult feminine voice with a Filipino accent, natural Taglish, and expressive but restrained delivery.
 
-See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md), [ARCHITECTURE.md](ARCHITECTURE.md), [CHARACTER_DESIGN.md](CHARACTER_DESIGN.md), [PROJECT_REQUIREMENTS.md](PROJECT_REQUIREMENTS.md), and [DEVELOPMENT_PROGRESS.md](DEVELOPMENT_PROGRESS.md). This is a runnable local implementation with explicitly identified validation gaps, not a claim of production voice quality.
+VoiceStudio is an optional local service and auditioning interface. Its presence does not prove that a particular engine, streaming mode, emotion tag, or export format is supported. Verify the installed version's capabilities and use an adapter. VoxCPM may require its own service rather than being available inside VoiceStudio.
+
+Clone Pan VTuber's exact voice only with the speaker's permission. Without permission, design an original voice or use a licensed voice reference. Do not treat publicly available livestream audio as permission. Voice similarity does not transfer personality, humor, or conversational timing.
+
+Audition candidate engines on identical English, Tagalog, Taglish, technical-name, laughter, teasing, and serious-conversation samples. Compare pronunciation, accent consistency, identity stability, first-audio delay, and memory use on the target PC. Do not select solely from a single demo or a vendor language list.
+
+## Proposed architecture
+
+| Component | Responsibility |
+| --- | --- |
+| Desktop host | Windows, tray, shortcuts, display recovery, app lifecycle |
+| Character renderer | Avatar, animation blending, mouth movement, gaze, optional effects |
+| Chat interface | Current conversation, history previews, search, settings, memory controls |
+| Conversation service | Character profile, recent context, retrieval, provider requests |
+| Audio service | Capture, speech detection, transcription, synthesis, playback, cancellation |
+| Performance controller | Validates emotion/gesture cues and synchronizes them with playback |
+| Persistence | SQLite or existing suitable storage, schema migrations, export and deletion |
+| Provider adapters | Replaceable LLM, STT, TTS, and optional knowledge retrieval |
+
+Prefer existing modules after the repository audit. For a custom foundation, Electron/TypeScript and a Python speech service are candidates, not mandatory replacements. Avoid adding a second backend or database when the existing architecture already covers the need.
+
+## Personality and memory
+
+Keep these separate:
+
+1. **Core identity:** versioned Zyrah character profile, updated explicitly.
+2. **Working context:** recent messages and the current topic.
+3. **Summaries:** compact records of older conversation, linked to source messages.
+4. **Long-term memories:** useful facts and preferences with provenance, timestamps, and correction/deletion controls.
+
+Include the core identity on every conversation request. Retrieve only relevant memories. Preserve uncertainty: “I might study Japanese” is not “I speak Japanese.” Never invent shared history or treat roleplay as a confirmed personal fact.
+
+Initial learning means retrieval and editable memory, not automatic model retraining. Optional document search and web access come later, with clear user controls. Perfect recall or zero personality drift is not guaranteed; evaluate consistency through long conversations.
+
+## Hidden means quiet
+
+Hiding the companion must stop microphone tracks, speech detection, transcription streams, current playback, queued speech, and pending performance cues. Cancel provider work where supported and reject all late results from canceled turns. Silence playback locally even if a remote provider cannot cancel generation.
+
+Closing only the chat panel may leave Zyrah visible. Explicitly hiding the companion hides its windows and invokes the complete audio shutdown. Restoring never silently reactivates capture. Quit also shuts down application-owned child processes.
+
+## Getting started with development
+
+Place this file and [AGENTS.md](AGENTS.md) in the repository root after reviewing any existing instructions. These documents do not include application code or a verified installer.
+
+1. Audit the repository and record working features and current setup commands.
+2. Check Windows version, CPU, RAM, GPU/VRAM, microphone, and local/cloud preference.
+3. Evaluate AIRI separately using its current upstream setup instructions. Do not overwrite the current project.
+4. Approve a model and demonstrate greeting, laughter, thinking, concern, and teasing.
+5. Audition local voice engines with a permitted or original voice.
+6. Connect one LLM, one STT adapter, and one TTS adapter.
+7. Implement synchronized performance, history, memory, and desktop lifecycle behavior.
+8. Package and test on a clean target Windows machine.
+
+Exact install/run/build commands, runtime versions, environment-variable names, and hardware requirements must be added after the repository is audited and the commands actually succeed. No placeholder command should be presented as verified setup.
+
+## Roadmap and completion gates
+
+- [ ] Audit: inventory, baseline build/test results, and foundation decision recorded.
+- [ ] Character demo: smooth gestures and expressions on the actual Zyrah model.
+- [ ] Voice demo: understandable English/Tagalog/Taglish and acceptable measured latency.
+- [ ] Conversation: stable identity across casual and serious topics.
+- [ ] Integration: speech, expressions, interruption, and playback stay coordinated.
+- [ ] Persistence: history survives restart; memory correction and deletion work.
+- [ ] Desktop: drag/click distinction, tray, shortcut, display recovery, hide shutdown.
+- [ ] Release: installer, migrations, third-party notices, accurate setup documentation.
+
+Measure end-of-speech-to-first-audio delay, cancellation delay, STT errors, memory accuracy, and idle resource use. Set numerical release targets after measuring the user's hardware; do not invent performance claims.
+
+## Development instructions and references
+
+Read [AGENTS.md](AGENTS.md) before modifying the project. Preserve existing user work and report the exact scope of testing.
+
+Technical references: [AIRI development and source](https://github.com/moeru-ai/airi), [Amica emotion system](https://docs.heyamica.com/overview/emotion-system), [VRM expressions](https://github.com/vrm-c/vrm-specification/blob/master/specification/VRMC_vrm-1.0/expressions.md), [VoiceStudio local API](https://voicestudio.sh/docs/local-api).
+
+This README does not assign a license to the existing project. Preserve its current license and third-party obligations; select a project license deliberately before distribution.

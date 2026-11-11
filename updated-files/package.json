@@ -1,0 +1,30 @@
+{
+  "name": "zyrah-companion",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "An original Filipino AI companion, with local memory and interruptible voice.",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server/index.js",
+    "dev": "node --watch --env-file-if-exists=.env server/index.js",
+    "setup:avatar": "node scripts/setup-avatar.js",
+    "check": "node scripts/check.js",
+    "test": "node --test --test-concurrency=1 tests/*.test.js",
+    "desktop": "electron .",
+    "test:browser": "playwright test --config tests/browser/playwright.config.js",
+    "test:desktop": "node --test tests/native/desktop.test.js",
+    "package:win": "node scripts/package.js",
+    "setup:desktop": "node node_modules/electron/install.js",
+    "download:core": "node scripts/download-core.js",
+    "audition:local": "node --env-file-if-exists=.env scripts/audition-local.js",
+    "benchmark": "node scripts/benchmark.js"
+  },
+  "main": "desktop/main.js",
+  "devDependencies": {
+    "electron": "45.3.0",
+    "@playwright/test": "1.65.0"
+  }
+}

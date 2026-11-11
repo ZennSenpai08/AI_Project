@@ -1,0 +1,10 @@
+import { createHash } from 'node:crypto';
+import { mkdirSync, writeFileSync } from 'node:fs';
+const url='https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js';
+const expected='25ae938cb4fe282ce189b357bcc97e603d1e1f7ec78bf04150d401c23cdc792f';
+const response=await fetch(url,{signal:AbortSignal.timeout(30000)});
+if(!response.ok)throw new Error(`Official Cubism Core download failed: ${response.status}`);
+const bytes=Buffer.from(await response.arrayBuffer());
+if(createHash('sha256').update(bytes).digest('hex')!==expected)throw new Error('Upstream Core changed. Review its compatibility and license before updating the pinned checksum.');
+mkdirSync('public/vendor/live2d',{recursive:true});writeFileSync('public/vendor/live2d/live2dcubismcore.min.js',bytes);
+console.log('Official Cubism Core downloaded and checksum verified. License: https://www.live2d.com/eula/live2d-proprietary-software-license-agreement_en.html');

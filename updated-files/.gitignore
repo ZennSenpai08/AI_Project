@@ -1,0 +1,13 @@
+node_modules/
+.env
+data/
+coverage/
+artifacts/
+*.log
+.test-data/
+.npm-cache/
+test-results/
+playwright-report/
+public/vendor/live2d/
+
+test-output.txt
