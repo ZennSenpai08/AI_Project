@@ -1,18 +1,21 @@
-import { demoReply, persona, replySchema, validateReply } from './personality.js';
+import { contextualPerformance, demoReply, persona, replySchema, validateReply } from './personality.js';
 import { readSSE } from './stream.js';
 import { groundedSuggestion } from './memory.js';
+import { assertNetworkAllowed, assertOfflineConfig } from './offline.js';
+import { LocalSTT } from './local-stt.js';
 
 const failure = (message, status = 502) => Object.assign(new Error(message), { status });
 export const escapeXml = text => text.replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[c]);
 
 export class Providers {
-  constructor(config, fetcher = fetch) { this.config = config; this.fetch = fetcher; }
+  constructor(config, fetcher = fetch) { this.config = config; assertOfflineConfig(config); this.fetch = fetcher; this.localSTT = new LocalSTT(config); }
   async request(url, options, signal) {
+    assertNetworkAllowed(this.config, url);
     let response;
     try {
       const combined = AbortSignal.any([signal || new AbortController().signal, AbortSignal.timeout(this.config.timeoutMs || 60000)]);
       for (let attempt = 0; attempt <= (this.config.retries || 0); attempt++) {
-        response = await this.fetch(url, { ...options, signal: combined });
+        response = await this.fetch(url, { ...options, redirect: 'error', signal: combined });
         if (![429, 503].includes(response.status) || attempt === (this.config.retries || 0)) break;
         await response.body?.cancel();
         await new Promise((resolve, reject) => { const timer = setTimeout(() => { combined.removeEventListener('abort', stop); resolve(); }, 300 * 2 ** attempt); const stop = () => { clearTimeout(timer); reject(combined.reason); }; combined.addEventListener('abort', stop, { once: true }); if (combined.aborted) stop(); });
@@ -47,17 +50,19 @@ export class Providers {
     if (onText) {
       const stream = await readSSE(response, onText, signal);
       if (stream.refusal) return { text: 'I can’t help with that request. We can find a safer way forward.', emotion: 'calm', memorySuggestion: null };
-      try { const reply = validateReply(JSON.parse(stream.full)); reply.memorySuggestion = groundedSuggestion(reply.memorySuggestion, text); return { ...reply, usage: stream.usage }; }
+      try { const reply = contextualPerformance(validateReply(JSON.parse(stream.full)), text); reply.memorySuggestion = groundedSuggestion(reply.memorySuggestion, text); return { ...reply, usage: stream.usage }; }
       catch { throw failure('The model returned an incomplete or invalid reply. Try again.'); }
     }
     const data = await response.json();
     const message = data.choices?.[0]?.message;
     if (message?.refusal) return { text: 'I can’t help with that request. I can help you find a safer way forward.', emotion: 'calm', memorySuggestion: null };
-    try { const reply = validateReply(JSON.parse(message?.content)); reply.memorySuggestion = groundedSuggestion(reply.memorySuggestion, text); return { ...reply, usage: data.usage || null }; }
+    try { const reply = contextualPerformance(validateReply(JSON.parse(message?.content)), text); reply.memorySuggestion = groundedSuggestion(reply.memorySuggestion, text); return { ...reply, usage: data.usage || null }; }
     catch { throw failure('The model returned an incomplete or invalid reply. Try again or choose a model with JSON support.'); }
   }
   async transcribe(wav, signal) {
     const c = this.config;
+    if (c.sttProvider === 'disabled') throw failure('Speech recognition is disabled. Type a message or configure local STT.', 503);
+    if (c.sttProvider === 'faster-whisper') return this.localSTT.transcribe(wav, signal);
     const local = c.sttProvider === 'local';
     if (!local && !c.openaiKey) throw failure('Cloud transcription needs OPENAI_API_KEY. Choose browser dictation or type instead.', 503);
     const form = new FormData();
@@ -71,6 +76,7 @@ export class Providers {
   }
   async speech(text, emotion, signal, speed = 1) {
     const c = this.config;
+    if (c.ttsProvider === 'disabled') throw failure('Speech output is disabled. The reply remains available as text.', 503);
     let response;
     if (c.ttsProvider === 'local') {
       // VoiceStudio's documented compatibility endpoint. No speculative emotion tags or cloning.

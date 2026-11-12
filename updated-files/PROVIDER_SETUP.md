@@ -1,3 +1,9 @@
+# Direct STT and strict privacy update
+
+For the new tested speech path, use STT_PROVIDER=faster-whisper, WHISPER_PYTHON and WHISPER_MODEL_PATH as documented in [README_START_HERE](../README_START_HERE.md). It loads only local model files on CPU/int8; socket/DNS access is denied in the owned worker and cancellation terminates only that child. The private checkout .env selects this engine; no existing configuration was overwritten.
+
+OFFLINE_ONLY=true prohibits all network provider requests, including generic loopback proxies. Use CHAT_PROVIDER=demo, EMBEDDING_PROVIDER=local, STT_PROVIDER=faster-whisper or disabled, TTS_PROVIDER=browser (localService voices only) or disabled. This tests local UI/speech/memory, not real offline AI chat. Ollama/VoiceStudio remain available in connected mode only.
+
 # Providers and auditions
 
 Copy .env.example to .env in updated-files; restart after editing. Never put keys in browser code or commit .env.

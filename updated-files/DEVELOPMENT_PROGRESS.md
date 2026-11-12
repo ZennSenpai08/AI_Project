@@ -1,3 +1,17 @@
+## Local STT and offline phase — 2026-11-12
+
+Audited current Git changes, actual Electron/runtime dependencies, entry points, tests and existing AppData SQLite/WAL files without modifying user records. Optional roadmap/acceptance/start-here files were absent and are now created. Baseline 56 tests passed.
+
+Fixed stale microphone-disconnect callbacks crossing capture generations; added captured-frame recording duration and hidden-state Record gating.
+
+Implemented direct faster-whisper 1.2.1 via an owned persistent CPU/int8 worker, pinned Python requirements and tiny model revision, local-file loading, in-memory audio, bundled VAD, socket/DNS denial, bounded concurrency and kill-on-cancel/restart. Installed only a project-local venv and ~75 MB multilingual model. Created a private .env only because none existed, selecting tested local STT without credentials.
+
+Implemented strict offline configuration and transport/session/CSP enforcement; unaudited loopback services are refused rather than assumed offline. Device voice selection requires localService=true; browser dictation/external avatar links are blocked. No complete offline AI conversation is claimed. Removed artificial pitch boost, added serious-context gesture guard, clears reactions on voice failure, adjusted palette to navy/lavender/gold. No database migration or optional external service was introduced.
+
+63 deterministic tests and five Edge browser cases passed. Real engine through HTTP returned empty silence and synthetic English with Zyrah transcribed as Zyra; latest measured CPU times were 3220 ms initial silence and 1341 ms following synthetic English. This is not human speech or a quality/latency guarantee. Native offline egress test passed with internet available; native source suite passed 3/3, including direct capture/transcription/hide/retry using synthetic Chromium audio. Actual disconnected full conversation is blocked by absent verified local LLM; Tagalog/Taglish and real-device voice quality remain unverified.
+
+See ACCEPTANCE_TESTS.md and INTEGRATION_ROADMAP.md for remaining gates and independent advanced-integration evaluations.
+
 # Zyrah development progress — 2026-11-12
 
 ## Repository audit and foundation
@@ -32,3 +46,5 @@ Demo loopback/in-memory benchmark, n=30: median 7.02 ms, p95 24.02 ms, max 25.01
 ## Continue from here
 
 Run from updated-files: npm run desktop. Configure a running local model and permitted local voice via .env.example; do not download large weights or incur paid inference without an explicit budget/authorization. Human audition on this RTX 2050 is the next highest-value step. Open-palm waving and audible laughter remain unverified model/voice capabilities. No release, push, purchase or installer publication occurred.
+
+Final portable verification: rebuilt Zyrah.exe passed all 3 native tests in 31.8 seconds, including actual local STT with synthetic capture, hide/restore/retry and network denial. Package scan found no private .env, databases, virtual environment or model weights; the worker, setup script and pinned requirements were included. Runtime/model paths must be configured for package use. No clean-machine installation or human speech evaluation is claimed.

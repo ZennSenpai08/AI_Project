@@ -158,3 +158,11 @@ Measure first-audio latency, interruption latency, memory accuracy, transcriptio
 Keep README.md synchronized with verified status. Add exact tested install/run/build commands only after they work; record runtime versions, configuration fields, model downloads, and known limitations. Preserve upstream notices and the project's actual license.
 
 At the end of each development task, report: what changed, why, checks run and results, remaining limitations, and the next concrete step. Clearly distinguish code written, automated tests passed, and native behavior verified. This file directs development; it does not replace Zyrah's runtime character profile.
+
+## Current application location and verification notes
+
+The runnable application is updated-files/. Preserve the initial root application deletions: recovered source was copied into this directory from Git f9f8fcd. Keep the existing Node/SQLite, browser modules and Electron host. Read DEVELOPMENT_PROGRESS.md and updated-files/TEST_REPORT.md before continuing. Runtime identity is updated-files/characters/zyrah.json. Source assets remain mao_en/. Native tests use disposable AppData paths and synthetic audio; they do not establish real microphone or provider quality. Portable artifacts are private and unsigned.
+
+## Offline and direct speech rules added in this phase
+
+Keep the application-owned speech worker local-files-only with socket/DNS denial; download models only in explicit setup. OFFLINE_ONLY is restart-scoped and fails closed: no cloud, browser dictation, arbitrary loopback proxy, remote asset or external avatar connection. Do not label Ollama or another localhost API offline without verifying downstream isolation. Current strict mode permits scripted demo only for conversation; full offline LLM flow remains open. Preserve authoritative AppData SQLite; do not migrate it into optional Hindsight/AnythingLLM databases. See INTEGRATION_ROADMAP.md and ACCEPTANCE_TESTS.md.

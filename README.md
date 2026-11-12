@@ -1,10 +1,25 @@
 # Zyrah — Expressive AI Desktop Companion
 
+## Implemented application — 2026-11-12
+
+Direct local STT is now installed and tested. See [start here](README_START_HERE.md), [acceptance evidence](ACCEPTANCE_TESTS.md) and [integration roadmap](INTEGRATION_ROADMAP.md). Strict Offline Only is enforced for supported local paths; a complete offline LLM conversation remains an open gate.
+
+The runnable application is now in [updated-files](updated-files/README.md). It uses Electron, Node.js/SQLite and the supplied Mao Live2D model. Start from the repository root:
+
+```powershell
+cd updated-files
+npm run desktop
+```
+
+Implemented: floating character, separate chat, bounded facial/body reactions, tray/pin/shortcut/position controls, persistent history and memory, replaceable speech/chat adapters and hidden-state cleanup. Default chat remains a labeled scripted demo until a real provider is configured. Voice quality and real microphone acceptance remain external checks. See [progress](DEVELOPMENT_PROGRESS.md), [test evidence](updated-files/TEST_REPORT.md), [provider setup](updated-files/PROVIDER_SETUP.md), and [limitations](updated-files/KNOWN_LIMITATIONS.md).
+
+The following sections retain the original product specification; planned entries are requirements, not claims of verified implementation.
+
 An original virtual companion who talks, listens, remembers useful context, and expresses herself through her voice, face, and body.
 
 **Project direction:** Windows-first floating desktop companion with natural English–Tagalog conversation, persistent personality, expressive speech, and coordinated character animation.
 
-> Status: development specification. These documents describe the intended product; they do not certify that any feature is implemented. The existing repository has not been audited for this document. Confirm capabilities in code and on the target machine before marking them complete.
+> Status: development specification. These documents describe the intended product; they do not certify that any feature is implemented. The current audit and evidence are recorded above and in the progress documents. Confirm capabilities in code and on the target machine before marking them complete.
 
 ## Meet Zyrah
 

@@ -36,7 +36,7 @@ export function createApp(config, { store = new Store(config.dataDir), providers
   const token = randomBytes(32).toString('hex');
   const active = new Map();
   const requests = new Set();
-  const cancelAll = () => { for (const controller of requests) controller.abort(); };
+  const cancelAll = () => { providers.localSTT?.stop(); for (const controller of requests) controller.abort(); };
   const embeddings = new EmbeddingProvider(config, providers, store);
   const avatarAssets = new AvatarAssets({ provider: config.avatarProvider });
   let rateCount = 0; let rateStart = Date.now();
@@ -44,7 +44,7 @@ export function createApp(config, { store = new Store(config.dataDir), providers
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' ws://127.0.0.1:8001; worker-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+    res.setHeader('Content-Security-Policy', `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'${config.offlineOnly ? '' : ' ws://127.0.0.1:8001'}; worker-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'`);
     res.setHeader('Permissions-Policy', 'microphone=(self), camera=()');
     const abort = new AbortController();
     requests.add(abort); res.on('close', () => requests.delete(abort)); res.on('finish', () => requests.delete(abort));
@@ -73,7 +73,7 @@ export function createApp(config, { store = new Store(config.dataDir), providers
         res.end(req.method === 'HEAD' ? undefined : data); return;
       }
       if (req.method === 'GET' && path === '/api/bootstrap') {
-        json(res, 200, { token, config: { appName: config.appName, characterName: config.characterName, chatProvider: config.chatProvider, chatModel: config.chatProvider === 'ollama' ? config.ollamaModel : config.chatModel, ttsProvider: config.ttsProvider, cloudStt: config.sttProvider !== 'browser', sttProvider: config.sttProvider }, settings: store.settings(), sessions: store.sessions(), memories: store.memories() }); return;
+        json(res, 200, { token, config: { appName: config.appName, characterName: config.characterName, chatProvider: config.chatProvider, chatModel: config.chatProvider === 'ollama' ? config.ollamaModel : config.chatModel, ttsProvider: config.ttsProvider, cloudStt: !['browser','disabled'].includes(config.sttProvider), sttProvider: config.sttProvider, offlineOnly: config.offlineOnly, localStt: providers.localSTT?.status() }, settings: store.settings(), sessions: store.sessions(), memories: store.memories() }); return;
       }
       const supplied = Buffer.from(req.headers['x-hiraya-token'] || '');
       if (supplied.length !== token.length || !timingSafeEqual(supplied, Buffer.from(token))) throw error('Session expired. Reload this page.', 403);
@@ -218,7 +218,7 @@ export function createApp(config, { store = new Store(config.dataDir), providers
   });
   server.requestTimeout = 70000;
   server.headersTimeout = 10000;
-  return { server, store, cancelAll, close: () => { cancelAll(); server.closeAllConnections(); return new Promise(resolve => server.close(() => { store.close(); resolve(); })); } };
+  return { server, store, cancelAll, close: () => { providers.localSTT?.stop(); cancelAll(); server.closeAllConnections(); return new Promise(resolve => server.close(() => { store.close(); resolve(); })); } };
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

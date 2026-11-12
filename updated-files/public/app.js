@@ -29,7 +29,7 @@ function voiceStatus(text) {
   if (/^Speaking/.test(text) && state.utteranceEnded) { request('/api/metrics', { method: 'POST', body: { kind: 'speech_to_playback_ms', durationMs: performance.now() - state.utteranceEnded, sessionId: state.session?.id } }).catch(() => {}); state.utteranceEnded = null; }
   $('#voice-status').textContent = text === 'Here with you' && state.voice ? 'Listening · speak naturally' : text;
   if (!/Speaking|Listening to/.test(text)) drawLevel(0);
-  avatar.update({ state: /Speaking/.test(text) ? 'speaking' : /Thinking/.test(text) ? 'thinking' : /Listening/.test(text) ? 'listening' : 'idle' });
+  avatar.update({ state: /Speaking/.test(text) ? 'speaking' : /Thinking/.test(text) ? 'thinking' : /Listening|Recording/.test(text) ? 'listening' : 'idle' });
   $('#stop').disabled = !state.busy && !state.speaking && !state.transcribing;
 }
 function drawLevel(level) { $('#waveform').querySelectorAll('i').forEach((bar, index) => { bar.style.height = `${Math.max(2, Math.min(17, level * 160 * (1 - Math.abs(index - 3) / 6)))}px`; }); }
@@ -92,18 +92,19 @@ function endVoice() {
   voiceStatus('Here with you');
 }
 async function toggleVoice() {
+  if (!state.token || state.config.sttProvider === 'disabled') { toast('Speech recognition is disabled. Configure a local engine or type a message.'); return; }
   if (state.hidden) return;
   if (state.voice) { endVoice(); return; }
   recognition?.abort(); recorder.stop(); state.recording = false; $('#record').textContent = '● Record'; interrupt();
   try { await output.unlock(); } catch { /* Device TTS does not need Web Audio. */ }
   state.voice = true; $('#voice-toggle').classList.add('active'); $('#voice-toggle').textContent = '■  End voice conversation';
   desktop?.action('microphone', true);
-  $('#voice-help').textContent = 'Half-duplex voice · capture pauses during replies. Use Stop or Record to interrupt. ' + (state.config.sttProvider === 'local' ? 'Transcription stays with your local service.' : 'Transcription may send audio to the selected provider.');
+  $('#voice-help').textContent = 'Half-duplex voice · capture pauses during replies. Use Stop or Record to interrupt. ' + (['local','faster-whisper'].includes(state.config.sttProvider) ? 'Local transcription selected.' : 'Transcription may send audio to the selected provider.');
   await input.start(state.config.cloudStt, state.settings.language, state.settings);
 }
 
 async function speak(text, emotion = 'warm', messageId = null, cue = cueFor(emotion)) {
-  if (state.muted || state.hidden) return;
+  if (state.muted || state.hidden || !state.token || state.config.ttsProvider === 'disabled') return;
   // Half duplex: release capture before synthesis/playback, including browser recognizers.
   const resumeVoice = state.voice; input.stop(); recorder.stop(); recognition?.abort();
   const epoch = state.epoch; state.speaking = true; voiceStatus('Preparing voice…');
@@ -118,7 +119,7 @@ async function speak(text, emotion = 'warm', messageId = null, cue = cueFor(emot
     }
     if (epoch === state.epoch) acknowledgePlayback('completed');
   }
-  catch (e) { if (epoch === state.epoch && e.name !== 'AbortError') { acknowledgePlayback('interrupted'); output.stop(); toast(`Voice: ${e.message}`, true); } }
+  catch (e) { if (epoch === state.epoch && e.name !== 'AbortError') { acknowledgePlayback('interrupted'); output.stop(); avatar.update({ emotion:'calm', cue:{ ...cueFor('calm'), id:`${epoch}:voice-error` } }); toast(`Voice: ${e.message}`, true); } }
   finally { if (epoch === state.epoch) { state.speaking = false; voiceStatus('Here with you'); if (resumeVoice && state.voice && !state.hidden) await input.start(state.config.cloudStt, state.settings.language, state.settings); } }
 }
 
@@ -248,7 +249,7 @@ function renderMemories() {
 function openMemories() { renderMemories(); if (!$('#memories-dialog').open) $('#memories-dialog').showModal(); }
 function populateVoices() {
   const select = $('#browser-voice'); select.replaceChildren(el('option', '', 'Automatic · prefer Filipino')); select.firstChild.value = '';
-  globalThis.speechSynthesis?.getVoices().forEach(voice => { const option = el('option', '', `${voice.name} · ${voice.lang}`); option.value = voice.voiceURI; select.append(option); }); select.value = state.settings.voice;
+  globalThis.speechSynthesis?.getVoices().filter(v => !state.config.offlineOnly || v.localService === true).forEach(voice => { const option = el('option', '', `${voice.name} · ${voice.lang}`); option.value = voice.voiceURI; select.append(option); }); select.value = state.settings.voice;
 }
 function renderSettings() {
   $('#memory-enabled').checked = state.settings.memoryEnabled; $('#speech-speed').value = state.settings.speed; $('#speech-volume').value = state.settings.volume; $('#silence').value = state.settings.silenceMs; $('#noise-threshold').value = state.settings.vadThreshold;
@@ -314,6 +315,7 @@ $('#erase-data').addEventListener('click', async () => {
 });
 $('#dictate').addEventListener('click', () => {
   if (recognition) { recognition.stop(); return; }
+  if (state.config.offlineOnly) { toast('Offline Only blocks browser dictation. Use Record with the application-owned local STT engine.'); return; }
   if (!Recognition) { toast('One-shot browser dictation is unavailable. Use voice conversation with cloud transcription, or type a message.', true); return; }
   endVoice(); recognition = new Recognition(); recognition.lang = state.settings.language === 'en' ? 'en-PH' : 'fil-PH'; recognition.interimResults = true;
   const existing = $('#message').value;
@@ -325,6 +327,7 @@ $('#dictate').addEventListener('click', () => {
 });
 window.addEventListener('pagehide', () => { endVoice(); recognition?.abort(); vtube.disconnect(); avatar.destroy(); });
 $('#vtube-connect').addEventListener('click', async () => {
+  if (state.config.offlineOnly) { toast('Offline Only disables external avatar integrations.'); return; }
   try {
     const hotkeys = JSON.parse($('#vtube-hotkeys').value || '{}');
     if (!hotkeys || typeof hotkeys !== 'object' || Array.isArray(hotkeys) || Object.entries(hotkeys).some(([key, value]) => !['warm', 'playful', 'curious', 'concerned', 'excited', 'calm'].includes(key) || typeof value !== 'string' || value.length > 100)) throw new Error('Use an object mapping supported emotions to hotkey names.');
@@ -336,7 +339,7 @@ $('#vtube-disconnect').addEventListener('click', () => vtube.disconnect());
 $('#record').addEventListener('click', async () => {
   if (state.hidden) return;
   if (state.recording) { recorder.finishRecording(); state.recording = false; $('#record').textContent = '● Record'; return; }
-  if (!state.config.cloudStt) { toast('Configure STT_PROVIDER=local with a running speech service, or a cloud transcription key. Browser Dictate may work in Chrome or Edge.'); return; }
+  if (!state.config.cloudStt) { toast('Configure STT_PROVIDER=faster-whisper with a downloaded local model. See README_START_HERE for setup; browser dictation is unavailable in strict offline mode.'); return; }
   endVoice(); recognition?.abort(); state.recording = true; $('#record').textContent = '■ Finish';
   desktop?.action('microphone', true);
   toast('Recording up to 20 seconds. Press Finish, then review your transcript.');
@@ -381,6 +384,8 @@ async function boot() {
   document.querySelectorAll('[data-character-name]').forEach(node => { node.textContent = state.config.characterName; });
   $('#provider-badge').textContent = state.config.chatProvider === 'demo' ? '◌  Offline demo' : `◌  ${state.config.chatProvider === 'ollama' ? 'Local AI configured' : 'Cloud AI configured'}`;
   renderMemories(); renderSettings();
+  $('#privacy-mode').textContent = state.config.offlineOnly ? 'Offline Only enforced · external providers disabled' : 'Connected mode · selected providers may send data';
+  $('#stt-readiness').textContent = state.config.sttProvider === 'faster-whisper' ? (state.config.localStt?.modelReady ? 'Local model files found · CPU recognition' : 'Local model missing · run speech setup and configure WHISPER_MODEL_PATH') : 'Speech recognition: ' + state.config.sttProvider;
   const saved = localStorage.getItem('hiraya-session');
   if (state.sessions.length) await loadSession(state.sessions.find(s => s.id === saved)?.id || state.sessions[0].id); else await newSession();
 }
@@ -395,6 +400,7 @@ function quietCompanion(hidden = true) {
 if (desktop) {
   document.body.classList.add('desktop-chat');
   desktop.onLifecycle(next => {
+    $('#record').disabled = next.hidden;
     const changed = state.desktopEpoch !== next.epoch;
     state.desktopEpoch = next.epoch; state.muted = next.muted;
     $('#mute').textContent = state.muted ? 'Unmute' : 'Mute';

@@ -23,7 +23,7 @@ export class VoiceInput {
       await context.resume();
       if (!this.running || generation !== this.generation) { stream.getTracks().forEach(t => t.stop()); await context.close().catch(() => {}); return; }
       const detector = new VoiceActivityDetector(context.sampleRate, { endMs: options.silenceMs || 850, threshold: options.vadThreshold || .016 });
-      this.manual = Boolean(options.manual); this.manualChunks = []; this.manualSamples = 0;
+      this.manual = Boolean(options.manual); this.manualChunks = []; this.manualSamples = 0; this.manualTick = 0;
       this.node = new AudioWorkletNode(context, 'hiraya-mic');
       this.source = context.createMediaStreamSource(stream);
       // The worklet emits silence; connection keeps processing alive without mic monitoring.
@@ -33,6 +33,8 @@ export class VoiceInput {
         this.onLevel?.(rms(data));
         if (this.manual) {
           this.manualChunks.push(data); this.manualSamples += data.length;
+          const tick = Math.floor(this.manualSamples / context.sampleRate * 4);
+          if (tick > this.manualTick) { this.manualTick = tick; this.onState(`Recording · ${(this.manualSamples / context.sampleRate).toFixed(1)} s`); }
           if (this.manualSamples >= context.sampleRate * 20) this.finishRecording();
           return;
         }
@@ -40,7 +42,7 @@ export class VoiceInput {
         if (event.type === 'start') { this.onStart(); this.onState('Listening to you…'); }
         if (event.type === 'end') { this.onState('Transcribing…'); this.onAudio(new Blob([encodeWav(event.pcm, context.sampleRate)], { type: 'audio/wav' })); }
       };
-      stream.getTracks().forEach(track => { track.onended = () => { if (this.running) { this.stop(); this.onError(new Error('Microphone disconnected. Start voice again to reconnect.')); } }; });
+      stream.getTracks().forEach(track => { track.onended = () => { if (this.running && generation === this.generation) { this.stop(); this.onError(new Error('Microphone disconnected. Start voice again to reconnect.')); } }; });
       this.onState('Listening · speak naturally');
     } catch (error) { if (generation === this.generation) { this.stop(); this.onError(error); } }
   }
@@ -64,6 +66,7 @@ export class VoiceInput {
       if (final.trim()) this.onText(final.trim());
     };
     recognition.onerror = event => {
+      if (!this.running || generation !== this.generation) return;
       if (event.error === 'no-speech' || event.error === 'aborted') return;
       this.stop(); this.onError(new Error(`Browser recognition: ${event.error}. Check microphone access or use text chat.`));
     };
@@ -79,7 +82,7 @@ export class VoiceInput {
     this.running = false; this.generation++; clearTimeout(this.restartTimer);
     this.recognition?.abort(); this.recognition = null;
     if (this.node) { this.node.port.onmessage = null; this.node.disconnect(); }
-    this.source?.disconnect(); this.stream?.getTracks().forEach(t => t.stop());
+    this.source?.disconnect(); this.stream?.getTracks().forEach(t => { t.onended = null; t.stop(); });
     this.manualChunks = []; this.manualSamples = 0;
     this.context?.close().catch(() => {}); this.context = null; this.node = null; this.source = null; this.stream = null;
   }
@@ -102,6 +105,7 @@ export class SpeechOutput {
     this.avatar.update({ speaking: false, mouth: 0 });
   }
   async speak(text, emotion, config, settings, request, onPlayback = () => {}) {
+    if (config.ttsProvider === 'disabled') throw new Error('Speech output is disabled; the reply is available as text.');
     this.stop(); const generation = this.generation;
     this.avatar.update({ emotion }); this.state('Preparing voice…');
     if (config.ttsProvider === 'browser') {
@@ -109,10 +113,15 @@ export class SpeechOutput {
       const utterance = new SpeechSynthesisUtterance(text);
       const voices = speechSynthesis.getVoices();
       utterance.voice = voices.find(v => v.voiceURI === settings.voice) || voices.find(v => /^(fil|tl)(-|$)/i.test(v.lang)) || voices.find(v => /^en-PH/i.test(v.lang)) || null;
+      if (config.offlineOnly) {
+        const local = voices.filter(v => v.localService === true);
+        utterance.voice = settings.voice ? local.find(v => v.voiceURI === settings.voice) : local.find(v => /^(fil|tl|en-PH)/i.test(v.lang)) || local[0];
+        if (!utterance.voice) throw new Error('Offline Only: no installed local device voice matches your selection. Install a local voice during setup or use text.');
+      }
       utterance.lang = settings.language === 'en' ? 'en-PH' : 'fil-PH';
       utterance.rate = emotion === 'concerned' ? .9 : emotion === 'excited' ? 1.05 : .97;
       utterance.rate *= settings.speed || 1; utterance.volume = settings.volume ?? .85;
-      utterance.pitch = 1.08;
+      utterance.pitch = 1;
       await new Promise((resolve, reject) => {
         this.finish = resolve;
         utterance.onstart = () => { if (generation !== this.generation) return; this.state('Speaking · device voice'); onPlayback(); this.avatar.update({ speaking: false, mouth: 0 }); };

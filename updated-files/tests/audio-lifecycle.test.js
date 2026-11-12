@@ -44,3 +44,14 @@ test('VTube Studio uses documented token/authentication flow then bounded mouth 
   await adapter.connect(); adapter.update({ speaking: true, mouth: 8, emotion: 'warm' }); await adapter.sendState(); adapter.disconnect();
   assert.equal(sent[0].messageType, 'AuthenticationTokenRequest'); assert.equal(sent[1].messageType, 'AuthenticationRequest'); assert.equal(sent[2].data.parameterValues[0].value, 1); assert.equal(socket.readyState, 3); assert.equal(adapter.ready, false);
 });
+
+
+test('a late disconnect from an old microphone cannot stop newly restored capture', async () => {
+  const previousNavigator=Object.getOwnPropertyDescriptor(globalThis,'navigator');const previousContext=globalThis.AudioContext;const previousNode=globalThis.AudioWorkletNode;
+  const tracks=[];Object.defineProperty(globalThis,'navigator',{configurable:true,value:{mediaDevices:{getUserMedia:async()=>{const track={stop(){}};tracks.push(track);return {getTracks:()=>[track]};}}}});
+  globalThis.AudioContext=class {constructor(){this.sampleRate=16000;this.audioWorklet={addModule:async()=>{}};}async resume(){}async close(){}createMediaStreamSource(){return {connect(){},disconnect(){}};}};
+  globalThis.AudioWorkletNode=class {constructor(){this.port={};}connect(){}disconnect(){}};
+  const input=new VoiceInput({onState(){},onError(){throw new Error('stale disconnect');}});
+  try{await input.start(true,'auto');const oldEnded=tracks[0].onended;input.stop();assert.equal(tracks[0].onended,null);await input.start(true,'auto');oldEnded();assert.equal(input.running,true);}
+  finally {input.stop();if(previousNavigator)Object.defineProperty(globalThis,'navigator',previousNavigator);else delete globalThis.navigator;globalThis.AudioContext=previousContext;globalThis.AudioWorkletNode=previousNode;}
+});

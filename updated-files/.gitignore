@@ -11,3 +11,8 @@ playwright-report/
 public/vendor/live2d/
 
 test-output.txt
+
+baseline-tests.txt
+speech/.venv/
+speech/models/
+__pycache__/

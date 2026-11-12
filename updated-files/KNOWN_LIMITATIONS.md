@@ -1,3 +1,7 @@
+# Current update
+
+Direct faster-whisper 1.2.1 CPU/int8 is now installed with a predownloaded pinned multilingual tiny model and has passed real silence/synthetic-English transcription through the API. The earlier absent-STT-service limitation below applies to the optional VoiceStudio adapter, not the new application-owned worker. Real microphone/Tagalog/Taglish listening checks remain unverified. Strict Offline Only now blocks unaudited external local services and cloud services; real offline LLM conversation and an OS-disconnected complete flow remain unimplemented/unverified.
+
 # Known limitations and external blockers
 
 - No running LLM, Ollama installation or cloud credentials: free-form chat and long-conversation personality quality are not live-verified. Demo is explicitly scripted.

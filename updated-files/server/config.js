@@ -1,7 +1,11 @@
 import { resolve } from 'node:path';
+import { assertOfflineConfig } from './offline.js';
 
 export function configFromEnv(env = process.env) {
   const config = {
+    offlineOnly: env.OFFLINE_ONLY === 'true',
+    whisperModelPath: env.WHISPER_MODEL_PATH ? resolve(env.WHISPER_MODEL_PATH) : '',
+    whisperPython: env.WHISPER_PYTHON || resolve('speech/.venv/Scripts/python.exe'),
     port: Number(env.PORT || 3210), host: '127.0.0.1',
     appName: (env.APP_NAME || 'Zyrah').slice(0, 60),
     characterName: (env.CHARACTER_NAME || 'Zyrah').slice(0, 40),
@@ -27,8 +31,10 @@ export function configFromEnv(env = process.env) {
   if (config.embeddingProvider === 'openai' && !config.openaiKey) throw new Error('Cloud embeddings require OPENAI_API_KEY');
   for (const value of [config.dailyRequests, config.dailySpeechChars, config.timeoutMs]) if (!Number.isInteger(value) || value < 1) throw new Error('Usage ceilings and timeout must be positive integers');
   if (![0, 1, 2].includes(config.retries)) throw new Error('PROVIDER_RETRIES must be 0, 1 or 2');
-  if (!['browser', 'azure', 'openai', 'local'].includes(config.ttsProvider)) throw new Error('Invalid TTS_PROVIDER');
-  if (!['browser', 'openai', 'local'].includes(config.sttProvider)) throw new Error('Invalid STT_PROVIDER');
+  if (!['true', 'false', undefined].includes(env.OFFLINE_ONLY)) throw new Error('OFFLINE_ONLY must be true or false');
+  assertOfflineConfig(config);
+  if (!['browser', 'azure', 'openai', 'local', 'disabled'].includes(config.ttsProvider)) throw new Error('Invalid TTS_PROVIDER');
+  if (!['browser', 'openai', 'local', 'faster-whisper', 'disabled'].includes(config.sttProvider)) throw new Error('Invalid STT_PROVIDER');
   if (config.sttProvider === 'openai' && !config.openaiKey) throw new Error('STT_PROVIDER=openai requires OPENAI_API_KEY');
   const speechUrl = new URL(config.localSpeechBase);
   if (!['localhost', '127.0.0.1', '[::1]'].includes(speechUrl.hostname) || !['http:', 'https:'].includes(speechUrl.protocol) || speechUrl.username || speechUrl.password) throw new Error('LOCAL_SPEECH_BASE_URL must use loopback HTTP(S), without URL credentials');

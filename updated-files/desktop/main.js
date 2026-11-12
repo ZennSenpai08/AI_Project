@@ -5,10 +5,13 @@ import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import { createApp } from '../server/index.js';
 import { configFromEnv } from '../server/config.js';
+import { rendererRequestAllowed } from '../server/offline.js';
 import { recoverBounds, DragTracker, registerRestore } from './geometry.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 app.setName('Zyrah');
+app.commandLine.appendSwitch('disable-background-networking');
+app.commandLine.appendSwitch('disable-component-update');
 if (process.env.ZYRAH_TEST_DATA) app.setPath('userData', process.env.ZYRAH_TEST_DATA);
 const single = app.requestSingleInstanceLock();
 if (!single) app.quit();
@@ -58,7 +61,7 @@ function createWindow(kind) {
   const bounds = recoverBounds(floating ? prefs.bounds : prefs.chatBounds, screen.getAllDisplays(), floating ? { width: 340, height: 480 } : { width: 1080, height: 760 });
   const win = new BrowserWindow({ ...bounds, show: false, frame: !floating, transparent: floating, backgroundColor: floating ? '#00000000' : '#f8f6ee', resizable: !floating,
     skipTaskbar: floating, alwaysOnTop: floating && prefs.pinned, title: 'Zyrah',
-    webPreferences: { preload: join(root, 'desktop/preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false, backgroundThrottling: false, webSecurity: true, partition: 'persist:zyrah' } });
+    webPreferences: { preload: join(root, 'desktop/preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: false, backgroundThrottling: false, webSecurity: true, partition: 'persist:zyrah' } });
   win.setMenuBarVisibility(false);
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', (event, url) => { if (url !== `${origin}/${floating ? 'companion.html' : ''}`) event.preventDefault(); });
@@ -82,10 +85,12 @@ async function start() {
   try { prefs = JSON.parse(readFileSync(prefsPath, 'utf8')); } catch { prefs = {}; }
   prefs = { pinned: true, muted: false, shortcut: 'Ctrl+Alt+C', ...prefs, microphone: false };
   const secret = randomBytes(32).toString('hex');
-  backend = createApp({ ...configFromEnv({ ...process.env, PORT: '0', DATA_DIR: process.env.DATA_DIR || join(app.getPath('userData'), 'data') }), desktopSecret: secret });
+  const config = configFromEnv({ ...process.env, PORT: '0', DATA_DIR: process.env.DATA_DIR || join(app.getPath('userData'), 'data') });
+  backend = createApp({ ...config, desktopSecret: secret });
   await new Promise((resolve, reject) => { backend.server.once('error', reject); backend.server.listen(0, '127.0.0.1', resolve); });
   origin = `http://127.0.0.1:${backend.server.address().port}`;
   const ses = session.fromPartition('persist:zyrah');
+  if (config.offlineOnly) ses.webRequest.onBeforeRequest((details, callback) => callback({ cancel: !rendererRequestAllowed(details.url, origin, true) }));
   await ses.cookies.set({ url: origin, name: 'zyrah-app', value: secret, httpOnly: true, sameSite: 'strict', path: '/' });
   const permitted = (webContents, permission, details) => permission === 'media' && !hidden && live(chat) && webContents === chat.webContents && (details.requestingUrl || details.securityOrigin || origin).startsWith(origin) && (!details.mediaTypes || details.mediaTypes.every(type => type === 'audio'));
   ses.setPermissionRequestHandler((wc, permission, callback, details) => callback(permitted(wc, permission, details)));

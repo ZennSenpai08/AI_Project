@@ -1,3 +1,11 @@
+# Current speech/offline phase — 2026-11-12
+
+Baseline was 56 passing tests. Current deterministic suite: 63/63 passing. Syntax check: 44 JS files passed. Edge browser: 5/5 passed (24.4 seconds), including actual Live2D rig rendering, mouth priority, memory and interface flows. Native source suite: 3/3 passed in 37.3 seconds, including actual local STT with synthetic capture, hide/restore/retry and offline egress denial.
+
+Real faster-whisper 1.2.1 tiny model ran on CPU/int8 through the actual HTTP endpoint: silence returned empty text and synthetic Windows English returned “Hello, Zyra. The database connection is ready.” Latest measured readiness is in artifacts/speech/live-stt.json, including worker cancellation/restart verification. These are two different samples, not a statistical latency distribution; no human speech/Tagalog/Taglish quality review occurred. Node mocks are labeled in tests. Offline native fetch/session denials were observed while internet was available; no OS-disconnected full conversation was tested. Native fixed timing assumptions were replaced with frame-derived recording progress. A stale microphone-ended callback could stop new capture; the generation guard and handler cleanup now have a regression test.
+
+The historical report below describes the previous phase; its absent direct-STT limitation is superseded.
+
 # Verification report — 2026-11-12
 
 ## Automated tests executed
@@ -22,3 +30,5 @@ artifacts/native/metrics.json contains a short actual process snapshot; artifact
 Ollama was not reachable and no local model was found. No cloud credentials were present in the inspected working tree. No paid inference was performed. npm run audition:local executed and failed to reach the absent local service; results.json honestly records that failure. No real voice samples, accent ratings, STT error rates or voice latency measurements are reported.
 
 Physical mouse drag/click-through over another app, actual tray clicks and global key presses, monitor disconnect/DPI changes, OS lock/suspend, real microphone/speaker echo handling and clean-machine installation remain manual checks. Full-duplex acoustic interruption and actual laughter remain unverified. Provider tests use mocks; the 100-turn scenario is deterministic and does not establish live personality quality. See KNOWN_LIMITATIONS.md.
+
+Final portable verification: rebuilt Zyrah.exe passed all 3 native tests in 31.8 seconds, including actual local STT with synthetic capture, hide/restore/retry and network denial. Package scan found no private .env, databases, virtual environment or model weights; the worker, setup script and pinned requirements were included. Runtime/model paths must be configured for package use. No clean-machine installation or human speech evaluation is claimed.

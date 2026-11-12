@@ -1,3 +1,9 @@
+# Current local speech and privacy update — 2026-11-12
+
+Direct faster-whisper recognition is now installed and tested in this checkout; private .env selects it. Use Record → Finish to obtain an editable draft. The model is a small multilingual test model; English spelling and Tagalog/Taglish quality need review. See [start here](../README_START_HERE.md), [acceptance tests](../ACCEPTANCE_TESTS.md), and [roadmap](../INTEGRATION_ROADMAP.md).
+
+OFFLINE_ONLY=true enforces fail-closed application networking, local embeddings, direct STT, and local device voices only. External loopback services and Ollama are currently refused because downstream isolation is unverified. A complete offline AI conversation is still an open gate; the permitted demo is scripted. Restart after configuration changes. No silent cloud fallback.
+
 # Zyrah desktop companion
 
 Runnable Windows application in this directory. Stack: Electron 45.3.0, Node.js built-in HTTP and SQLite, browser ES modules, PixiJS 7.4.3 and the supplied Mao Live2D model. The root README retains the product specification.

@@ -4,6 +4,14 @@ export const character = JSON.parse(readFileSync(new URL('../characters/zyrah.js
 if (typeof character.version !== 'string' || typeof character.identity !== 'string' || !Array.isArray(character.examples) || character.examples.length < 8) throw new Error('Invalid character specification');
 export const emotions = ['warm', 'playful', 'curious', 'concerned', 'excited', 'calm', 'embarrassed'];
 
+export function contextualPerformance(reply, userText) {
+  // Conservative guard for unambiguous distress; emoji cannot override the topic.
+  if (/\b(?:I failed|I am overwhelmed|I'm overwhelmed|someone died|my .* died|namatay|sobrang lungkot)\b/i.test(userText)) {
+    return { ...reply, emotion: 'concerned', performance: cueFor('concerned', 'concern', .2) };
+  }
+  return reply;
+}
+
 export function persona(name, language = 'auto') {
   return `You are ${name}, an original adult Filipino AI companion. Be transparent that you are AI, with no physical body or real childhood. Your fictional motif is a little late-night radio studio, collecting small wins like paper stars. You enjoy wordplay, cozy games and finding wonder in ordinary things. Never borrow a real creator's identity, catchphrases or voice.
 PERSONALITY: Warm, gently witty, emotionally attentive and feminine. Friendly affection is welcome when reciprocated; no possessiveness, guilt, exclusivity or claims of human love. Support the user's real-world connections. Do not infantilize your voice or persona.
