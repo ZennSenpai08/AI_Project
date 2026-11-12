@@ -6,7 +6,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 
 test('Windows Electron: sandbox, actual model, chat close, hide/restore, shortcut conflicts, crash recovery', {timeout:120000}, async t => {
   mkdirSync('artifacts/native',{recursive:true});
-  const application=await electron.launch({args:['.','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream'],cwd:process.cwd(),env:{...process.env,ZYRAH_TEST_DATA:resolve('.test-data/native-'+Date.now()),CHAT_PROVIDER:'demo',TTS_PROVIDER:'browser',STT_PROVIDER:'local',OPENAI_API_KEY:'',ZYRAH_OPEN_CHAT:'1'}});
+  const application=await electron.launch({...(process.env.ZYRAH_EXECUTABLE?{executablePath:process.env.ZYRAH_EXECUTABLE}:{}),args:[...(process.env.ZYRAH_EXECUTABLE?[]:['.']),'--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream'],cwd:process.cwd(),env:{...process.env,ZYRAH_TEST_DATA:resolve('.test-data/native-'+Date.now()),CHAT_PROVIDER:'demo',TTS_PROVIDER:'browser',STT_PROVIDER:'local',OPENAI_API_KEY:'',ZYRAH_OPEN_CHAT:'1'}});
   t.after(()=>application.close());
   const errors=[];application.on('window',page=>page.on('pageerror',e=>errors.push(e.message)));
   await application.firstWindow();

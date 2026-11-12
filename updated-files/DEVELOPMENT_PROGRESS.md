@@ -1,36 +1,34 @@
-# Development progress
+# Zyrah development progress — 2026-11-12
 
-Updated 2026-11-11.
+## Repository audit and foundation
 
-## Environment and preserved work
+The starting working tree contained edited root requirements and Mao assets; tracked application files were already deleted and updated-files did not exist. Source from Git f9f8fcd was copied into updated-files without checkout/reset. Existing root deletions, assets and unrelated build_zyrah.md were preserved. No credentials or user databases were found in the working tree.
 
-Initial workspace inspection found no application or repository instructions. Node 22.18.0, npm 11.10.0 and Python 3.9.13 were available on Windows. During implementation AGENTS.md appeared and the package name changed to `Zy-ai`; both were preserved. No Git repository was initialized, no public deployment was created, and no account/subscription was purchased.
+Retained Node HTTP/SQLite and browser ES modules, existing memory/voice providers and Mao assets; added Electron 45.3.0. AIRI was evaluated separately in docs/airi-evaluation/README.md. No competing companion framework was merged.
 
-## Completed implementation
+## Plan and completed work
 
-- Local HTTP/static server, validated configuration, automatic SQLite setup and schema upgrade.
-- Original character JSON, protected persona, English/Filipino/Taglish settings and deterministic demo.
-- OpenAI/Ollama chat adapters with structured output, real SSE text deltas, timeout/cancellation/errors and bounded retries.
-- Responsive chat interface, avatar panel, history, rename/delete, draft recovery, settings and explicit AI disclosure.
-- Browser dictation, bounded Record/Finish drafts, cloud WAV transcription, configurable VAD hands-free, mute/stop and stale-result rejection.
-- Azure Filipino speech candidate, device voice selection, OpenAI compatibility adapter, normalized sentence-sized speech and playback acknowledgements.
-- Persistent memory notebook, source metadata, conservative grounding/conflict checks, correction/deletion/disable and bounded summaries.
-- TXT/MD ingestion, model-tagged vectors, local lexical/cloud embedding adapters, bounded passages and source labels.
-- Actual-amplitude browser avatar, transparent overlay, optional local VTube Studio adapter.
-- Voice audition corpus/export, persistent usage reservations, timing/usage reporting, data export and explicit erasure.
-- Runtime lockfile with zero third-party runtime dependencies; optional Playwright 1.58.2 test package.
-- Core, API, provider and audio-lifecycle tests; 100-turn deterministic run and evaluation corpus; benchmark script.
+- [x] Audit, hardware inventory and baseline: 45/48 recovered tests passed; three asset-location failures fixed.
+- [x] Versioned Zyrah identity and bounded emotion/gesture output, with deterministic defaults.
+- [x] Actual Mao model rendering, inspected parameter ranges, face/body layers and raised-arm greeting approximation.
+- [x] Playback-triggered performance, audio amplitude mouth priority, cancellation and half-duplex capture.
+- [x] Electron companion/chat windows, native tray, pin, shortcut conflict detection, alpha hit map, saved bounds and display-work-area recovery.
+- [x] Central hide invalidation, backend abort, immediate mute, renderer capture release and fail-closed destruction; mic stays off on restore.
+- [x] Searchable previews and current-session recovery; approved memory CRUD, source exclusion on forgetting and source-linked note deletion with conversations.
+- [x] Local VoiceStudio-compatible speech adapter, identical-sample audition script and measured hardware baseline.
+- [x] Windows portable build script with explicit source allowlist; no .env, database or model-editor source included.
+- [x] Updated root/readable application documentation and preserved asset notices.
+- [ ] Live LLM and English/Filipino/Taglish voice acceptance: blocked by absent model/service/credentials and no selected permitted voice.
+- [ ] Physical pointer/tray/hotkey, monitor hotplug, actual lock/suspend, real microphone/speaker and clean-machine checks.
 
-## Verification
+## Verification and measured environment
 
-Latest verification after Mao integration: syntax passed for 30 JavaScript files and all 48 automated tests passed in about 2.67 seconds. Results are recorded in `TEST_REPORT.md`. The app starts on port 3210. Earlier mock loopback benchmark: 30 requests, median 5.13 ms, p95 10.56 ms; these are not live AI/audio latency figures.
+Windows 11 Home 10.0.26200; Ryzen 5 6600H, 6 cores/12 threads; RAM 16,438,312,960 bytes; RTX 2050 4096 MiB, driver 595.79. Node 22.18.0/npm 11.10.0; Electron embeds Node 24.22.2. Hardware was read locally, not inferred from a remote Linux environment.
 
-Interactive browser access failed because the browser access host was unavailable. npm registry lookup/install preparation failed with OS `EACCES`; no attempt was made to bypass permissions. Playwright test execution then reported the command unavailable. Browser tests were written but not run. No cloud credentials or real microphone/voice/VTube session were available.
+56 unit/API/provider/controller tests passed. Five Edge browser tests exercise history/memory and actual Mao rendering/mouth layering. Native Windows automation exercises sandboxing, actual transparent model window, chat close versus hide, synthetic capture-track release, restore, real shortcut registration conflict and forced renderer-crash recovery. See TEST_REPORT.md for final execution details. These do not establish live microphone/provider quality.
+
+Demo loopback/in-memory benchmark, n=30: median 7.02 ms, p95 24.02 ms, max 25.01 ms. This measures scripted HTTP behavior only. Native process metrics and model inventory are under artifacts, with no claim of sustained idle/peak utilization. Local voice audition failed to connect; no audio/voice rating was invented.
 
 ## Continue from here
 
-2026-11-11 follow-up: the user requested `mao_en` as Hiraya's visual model. Inspected its original notice, manifest, expressions, motions, and `ParamA` lip-sync group; preserved all source assets. Added default Live2D renderer integration, manifest-only asset routes, visible attribution, explicit runtime readiness/errors, expression/mouth mapping, visibility/cleanup, and a local runtime setup helper. The pinned optional dependencies and official user-supplied Cubism Core are not installed because registry access returned `EACCES`. Do not claim real rendering is passed. First complete `MODEL_SETUP.md`, then visually exercise the panel/overlay and cloud-audio interruption. The original SVG remains an explicit configuration alternative.
-
-Do not rebuild or replace the app. First run `npm run check` and `npm test`, then configure a real provider in `.env`. Follow the live acceptance checklist in `PROVIDER_SETUP.md`. In an environment with npm access, install/run `tests/browser` and resolve any actual UI failures. Human voice audition is the highest-value remaining validation. Native streaming voice transport is the next architectural improvement after measuring this pipeline.
-
-Known architectural choices: JavaScript/Node/SQLite instead of the preferred larger stack; lexical user-memory ranking; cloud embeddings for documents only; recorded-utterance STT and buffered sentence TTS; no hard dollar estimate; single local user. These are documented explicitly in `KNOWN_LIMITATIONS.md`.
+Run from updated-files: npm run desktop. Configure a running local model and permitted local voice via .env.example; do not download large weights or incur paid inference without an explicit budget/authorization. Human audition on this RTX 2050 is the next highest-value step. Open-palm waving and audible laughter remain unverified model/voice capabilities. No release, push, purchase or installer publication occurred.

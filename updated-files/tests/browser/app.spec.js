@@ -53,11 +53,6 @@ test('actual Mao rig inventory and bounded performance render with speech mouth 
   await page.evaluate(()=>{window.inspectedAvatar.update({emotion:'warm',cue:{id:'test-wave',emotion:'warm',gesture:'wave',intensity:.5},speaking:true,mouth:.5});});
   await expect.poll(()=>page.evaluate(()=>window.inspectedAvatar.blended.PartArmLB)).toBeGreaterThan(.95);
   await page.screenshot({path:'artifacts/browser/model-wave.png'});
-  for (const hand of [-10, 0, 10]) {
-    await page.evaluate(hand=>{const a=window.inspectedAvatar;const p=a.performance;p.now=()=>p.active.start+1200;const original=p.sample.bind(p);p.sample=()=>({...original(),ParamHandLB:hand});},hand);
-    await page.waitForTimeout(250);
-    await page.screenshot({path:`artifacts/browser/hand-${hand}.png`});
-  }
   const mouth=await page.evaluate(()=>{const a=window.inspectedAvatar;a.beforeUpdate();const speaking=a.model.internalModel.coreModel.getParameterValueById('ParamA');a.update({cancel:9,cue:null,speaking:false,mouth:0});a.beforeUpdate();return {speaking,silent:a.model.internalModel.coreModel.getParameterValueById('ParamA'),active:a.performance.active};});
   expect(mouth.speaking).toBeCloseTo(.5);expect(mouth.silent).toBe(0);expect(mouth.active).toBeNull();
   await page.evaluate(()=>window.inspectedAvatar.destroy());

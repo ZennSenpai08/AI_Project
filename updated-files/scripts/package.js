@@ -9,7 +9,7 @@ mkdirSync(target,{recursive:true});cpSync('node_modules/electron/dist',target,{r
 renameSync(join(target,'electron.exe'),join(target,'Zyrah.exe'));
 const destination=join(target,'resources/app');mkdirSync(destination,{recursive:true});
 for(const name of ['desktop','server','public','characters'])cpSync(name,join(destination,name),{recursive:true});
-for(const name of ['README.md','.env.example','ASSET_LICENSES.md','PROVIDER_SETUP.md','KNOWN_LIMITATIONS.md'])if(existsSync(name))cpSync(name,join(destination,name));
+for(const name of ['README.md','.env.example','ASSET_LICENSES.md','PROVIDER_SETUP.md','KNOWN_LIMITATIONS.md','TEST_REPORT.md','MODEL_SETUP.md','ARCHITECTURE.md','CHARACTER_DESIGN.md'])if(existsSync(name))cpSync(name,join(destination,name));
 cpSync('../mao_en/runtime',join(destination,'mao_en/runtime'),{recursive:true});cpSync('../mao_en/ReadMe.txt',join(destination,'mao_en/ReadMe.txt'));
 writeFileSync(join(destination,'package.json'),JSON.stringify({name:'zyrah-companion',version:'1.0.0',private:true,type:'module',main:'desktop/main.js'},null,2));
 writeFileSync(join(target,'START-HERE.txt'),'Run Zyrah.exe. No installer or administrator access is needed. Configuration: resources/app/.env (copy .env.example). User data: %APPDATA%/Zyrah. This is an unsigned private development build; see resources/app/KNOWN_LIMITATIONS.md.\r\n');
