@@ -4,6 +4,8 @@ import io
 import json
 import os
 import sys
+import time
+import wave
 from pathlib import Path
 
 os.environ.update(HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1", HF_HUB_DISABLE_TELEMETRY="1")
@@ -29,10 +31,19 @@ def run():
             audio = base64.b64decode(request["audio"], validate=True)
             if len(audio) > 3000000:
                 raise ValueError("audio too large")
-            segments, _ = model.transcribe(io.BytesIO(audio), task="transcribe", language=None,
-                beam_size=3, vad_filter=True, condition_on_previous_text=False)
+            language = request.get("language")
+            if language not in (None, "tl", "en"):
+                raise ValueError("unsupported language")
+            if language == "tl" and not model.model.is_multilingual:
+                raise ValueError("Tagalog requires a multilingual checkpoint")
+            start = time.monotonic()
+            segments, info = model.transcribe(io.BytesIO(audio), task="transcribe", language=language,
+                beam_size=5, vad_filter=True, condition_on_previous_text=False,
+                log_prob_threshold=-1.0, no_speech_threshold=0.6, hotwords='Zyrah')
             text = " ".join(s.text.strip() for s in segments).strip()
-            print(json.dumps({"id": request["id"], "text": text[:4000]}), flush=True)
+            with wave.open(io.BytesIO(audio)) as wav:
+                capture = {"sampleRate": wav.getframerate(), "channels": wav.getnchannels(), "seconds": wav.getnframes() / wav.getframerate()}
+            print(json.dumps({"id": request["id"], "text": text[:4000], "diagnostics": {"requestedLanguage": language or "auto", "effectiveLanguage": info.language, "detectedLanguage": info.language if language is None else None, "task": "transcribe", "engineSampleRate": model.feature_extractor.sampling_rate, "inferenceMs": round((time.monotonic()-start)*1000), **capture}}), flush=True)
         except Exception:
             print(json.dumps({"id": request.get("id"), "error": "transcription_failed"}), flush=True)
 

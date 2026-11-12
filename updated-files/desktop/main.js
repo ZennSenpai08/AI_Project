@@ -86,7 +86,7 @@ async function start() {
   prefs = { pinned: true, muted: false, shortcut: 'Ctrl+Alt+C', ...prefs, microphone: false };
   const secret = randomBytes(32).toString('hex');
   const config = configFromEnv({ ...process.env, PORT: '0', DATA_DIR: process.env.DATA_DIR || join(app.getPath('userData'), 'data') });
-  backend = createApp({ ...config, desktopSecret: secret });
+  backend = createApp({ ...config, runtimeEntry:process.execPath + ' / ' + app.getAppPath(), desktopSecret: secret });
   await new Promise((resolve, reject) => { backend.server.once('error', reject); backend.server.listen(0, '127.0.0.1', resolve); });
   origin = `http://127.0.0.1:${backend.server.address().port}`;
   const ses = session.fromPartition('persist:zyrah');
@@ -112,8 +112,8 @@ async function start() {
   ipcMain.on('zyrah:avatar', (event, state) => {
     if (senderKind(event) !== 'chat' || hidden || !state || state.desktopEpoch !== epoch || !live(companion)) return;
     if (!['warm', 'playful', 'curious', 'concerned', 'excited', 'calm', 'embarrassed'].includes(state.emotion)) return;
-    const safe = { emotion: state.emotion, mouth: Math.max(0, Math.min(1, Number(state.mouth) || 0)), speaking: state.speaking === true, state: ['idle', 'thinking', 'listening', 'speaking'].includes(state.state) ? state.state : 'idle', cancel: Number(state.cancel) || 0 };
-    if (state.cue && typeof state.cue.id === 'string' && state.cue.id.length < 100 && ['none','wave','amused','thinking','embarrassed','tease','concern','celebrate'].includes(state.cue.gesture)) safe.cue = { id: state.cue.id, emotion: safe.emotion, gesture: state.cue.gesture, intensity: Math.max(0, Math.min(.7, Number(state.cue.intensity) || .35)) };
+    const safe = { cue:null, emotion: state.emotion, mouth: Math.max(0, Math.min(1, Number(state.mouth) || 0)), speaking: state.speaking === true, state: ['idle', 'thinking', 'listening', 'speaking'].includes(state.state) ? state.state : 'idle', cancel: Number(state.cancel) || 0 };
+    if (state.cue && typeof state.cue.id === 'string' && state.cue.id.length < 100 && ['none','wave','amused','thinking','embarrassed','tease','concern','celebrate'].includes(state.cue.gesture)) safe.cue = { turn:Number.isInteger(state.cue.turn)?state.cue.turn:0, segment:Number.isInteger(state.cue.segment)?state.cue.segment:0, id: state.cue.id, emotion: safe.emotion, gesture: state.cue.gesture, intensity: Math.max(0, Math.min(.7, Number(state.cue.intensity) || .35)) };
     companion.webContents.send('zyrah:avatar', safe);
   });
   ipcMain.on('zyrah:hit-map', (event, value) => { if (senderKind(event) === 'companion' && Array.isArray(value) && value.length === 32 * 48 && value.every(n => n === 0 || n === 1)) hitMap = value; });

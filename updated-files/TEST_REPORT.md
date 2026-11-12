@@ -1,3 +1,24 @@
+# Current speech repair verification — 2026-11-12
+
+- `npm run check`: 51 JavaScript files passed syntax checks.
+- `npm test`: **70/70 passed** (latest 6.67 seconds). Real HTTP/SQLite plus deterministic provider/process mocks; includes explicit tl/en/auto configuration, persisted profile, owned-process replacement, stale cancellation and bounded AudioContext resume.
+- `npm run test:browser`: **5/5 Edge cases passed** (21.2 seconds), including actual Mao rig/parameter rendering, mouth priority, chat/memory and layout regressions.
+- `npm run test:desktop`: **3/3 native Windows cases passed** (35.6 seconds). Actual Electron windows, synthetic Chromium capture, actual faster-whisper tiny inference, Dictate through local STT, hide/transcription/retry, native shortcut conflict, crash recovery and offline request blocking.
+- `node --test tests/native/speech-v2.test.js`: **1/1 native neural case passed** (127.1 seconds). Actual OmniVoice Q4 on Vulkan1/RTX 2050, profile B preview and conversational WAV playback, nonzero mouth amplitude relayed after chat closes, numeric turn/segment cues, Stop clears mouth/cues, hide mutes/hides, a real owned synthesis process is canceled, fake capture/listening pose and profile persistence/mic-off restart. Conversation is the scripted demo; capture is synthetic. This is native automated rendering/playback evidence, not human listening, physical pointer acceptance or a live LLM test.
+- `node scripts/compare-stt-v2.js`: **12 real-engine inferences executed** (tiny/base × Filipino synthetic greeting/English Windows fixture × auto/fil/en). Tiny/auto misdetected the Filipino greeting as English; tiny/tl improved that fixture but retained errors. WER details and exact normalization are in artifacts/voice-v2/stt-comparison.json. No human Tagalog accuracy claim.
+- Original voice auditions: **14 actual WAVs** (two references × six identical requested lines, plus laughter each), and six reconstructed OS-default comparison WAVs. No human preference/quality approval recorded. artifacts/voice-v2/index.html is the playable comparison.
+- `./speech/setup-neural.ps1 -Offline`: passed incremental native build and pinned weight checksum verification on this installed toolchain. Fresh-machine full setup remains unverified.
+
+Evidence: artifacts/unit-speech-v2.log, browser-speech-v2.log, desktop-speech-v2.log, native-speech-v2-final2.log, performance-v2/evidence.json and screenshots. Latest native synthesis: 31,601 ms preview and 42,527 ms reply. These are synthesis times, not an end-to-end audio-latency distribution. Standalone RTX/RVQ audition samples were roughly 15–24 seconds; initial CPU attempts were much slower and one timed out.
+
+Several intermediate native tests failed: video capture stalled navigation, response-body observation stalled, and post-hide playback checks were inconsistent. Tests were changed to observe the renderer's real fetch and amplitude signals, use an explicit Send gesture, and record bounded states. Source now also bounds suspended AudioContext resume, explicitly clears cues across IPC, and serializes replacement synthesis until the old owned child exits. Only the final passing log above is acceptance evidence; prior failures are retained in ignored artifacts.
+
+Physical microphone/noise/Tagalog/Taglish and voice preference, OS-disconnected full LLM flow, physical drag/tray/hotkeys/monitor events, sustained resource peaks and clean-machine packaging remain open. No new portable build was produced in this focused phase; historical builds contain older source. See SPEECH_V2.md.
+
+Root `./Start-Zyrah.ps1` was executed successfully after testing. Process inspection confirmed a Zyrah window, the project Electron executable, renderer --app-path pointing at updated-files, normal AppData and no fake-media/test flags. It was left running; capture starts off by the verified desktop lifecycle. The existing database was queried read-only for the two selected speech preferences only.
+
+The report below retains previous phase evidence; earlier absent-neural-voice statements are superseded.
+
 # Current speech/offline phase — 2026-11-12
 
 Baseline was 56 passing tests. Current deterministic suite: 63/63 passing. Syntax check: 44 JS files passed. Edge browser: 5/5 passed (24.4 seconds), including actual Live2D rig rendering, mouth priority, memory and interface flows. Native source suite: 3/3 passed in 37.3 seconds, including actual local STT with synthetic capture, hide/restore/retry and offline egress denial.

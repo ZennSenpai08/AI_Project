@@ -166,3 +166,7 @@ The runnable application is updated-files/. Preserve the initial root applicatio
 ## Offline and direct speech rules added in this phase
 
 Keep the application-owned speech worker local-files-only with socket/DNS denial; download models only in explicit setup. OFFLINE_ONLY is restart-scoped and fails closed: no cloud, browser dictation, arbitrary loopback proxy, remote asset or external avatar connection. Do not label Ollama or another localhost API offline without verifying downstream isolation. Current strict mode permits scripted demo only for conversation; full offline LLM flow remains open. Preserve authoritative AppData SQLite; do not migrate it into optional Hindsight/AnythingLLM databases. See INTEGRATION_ROADMAP.md and ACCEPTANCE_TESTS.md.
+
+## Focused speech repair conventions
+
+Read updated-files/SPEECH_V2.md before changing speech. Current local TTS is standalone OmniVoice Q4 with versioned original references under speech/voices; preserve these anchors and increment voice IDs when changing them. Preview and chat must share /api/speech and the persisted speechVoice. Missing runtime/models must remain text-only, with no silent system voice. Keep STT sttLanguage distinct from chat language; fil maps to Whisper tl/transcribe, and local Dictate must not use a hidden browser recognizer. Preserve the current colors and working capture worklet. Native test failures must be resolved or reported accurately; synthesized fixtures do not establish real microphone accuracy.

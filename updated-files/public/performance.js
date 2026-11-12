@@ -5,7 +5,7 @@ export function cueFor(emotion = 'warm', gesture = 'none', intensity = .35) {
   return { emotion: cueEmotions.includes(emotion) ? emotion : 'calm', gesture: gestures.includes(gesture) ? gesture : 'none', intensity: Math.max(0, Math.min(.7, Number.isFinite(intensity) ? intensity : .35)) };
 }
 export class PerformanceController {
-  constructor(now = () => performance.now()) { this.now = now; this.epoch = 0; this.hidden = false; this.lastGesture = -Infinity; this.cancel(); }
+  constructor(now = () => performance.now()) { this.now = now; this.epoch = 0; this.hidden = false; this.lastGesture = -Infinity; this.state = 'idle'; this.cancel(); }
   cancel(hidden = this.hidden) { this.epoch++; this.hidden = hidden; this.pending = null; this.active = null; this.emotion = 'calm'; this.intensity = .2; return this.epoch; }
   restore() { this.hidden = false; }
   queue(cue, turn, segment = 0) { if (this.hidden) return false; this.pending = { ...cueFor(cue?.emotion, cue?.gesture, cue?.intensity), turn, segment, epoch: this.epoch }; return true; }
@@ -21,6 +21,7 @@ export class PerformanceController {
     }
     return true;
   }
+  setState(state) { if (['idle','listening','thinking','speaking'].includes(state)) this.state = state; }
   sample() {
     if (this.hidden) return {};
     const t = this.now() / 1000; const amount = this.intensity;
@@ -28,9 +29,12 @@ export class PerformanceController {
       ParamBodyAngleZ: Math.sin(t * .5) * .5, ParamEyeBallX: Math.sin(t * .23) * .12,
       ParamEyeBallY: 0, ParamCheek: 0, ParamEyeLSmile: 0, ParamEyeRSmile: 0, ParamMouthUp: 0, ParamMouthDown: 0,
       PartArmLA: 1, PartArmLB: 0 };
-    if (['warm', 'playful', 'excited'].includes(this.emotion)) { p.ParamMouthUp = amount; p.ParamEyeLSmile = p.ParamEyeRSmile = amount * .55; }
-    if (this.emotion === 'concerned') { p.ParamMouthDown = .15; p.ParamAngleZ = -3; p.ParamBodyAngleY = 2; }
+    if (['warm', 'playful', 'excited'].includes(this.emotion)) { p.ParamMouthUp = Math.min(.8,amount * 1.6); p.ParamEyeLSmile = p.ParamEyeRSmile = amount * .9; }
+    if (this.emotion === 'concerned') { p.ParamMouthDown = .3; p.ParamAngleZ = -6; p.ParamBodyAngleY = 3; p.ParamBrowLY = p.ParamBrowRY = .3; }
     if (this.emotion === 'embarrassed') { p.ParamCheek = amount; p.ParamEyeBallX = .35; p.ParamAngleY = -3; }
+    if (this.state === 'listening') { p.ParamEyeBallX = 0; p.ParamEyeBallY = .12; p.ParamAngleY = 3 + Math.sin(t * .8) * 1.5; p.ParamBodyAngleY = 2; }
+    if (this.state === 'thinking') { p.ParamEyeBallX = .4; p.ParamAngleZ += 7; p.ParamAngleY = 3; }
+    if (this.state === 'speaking') { p.ParamAngleZ += Math.sin(t * 1.6) * 2.8; p.ParamBodyAngleX = Math.sin(t * .9) * 1.6; }
     const a = this.active;
     if (!a) return p;
     const u = (this.now() - a.start) / a.duration;
@@ -41,7 +45,7 @@ export class PerformanceController {
     switch (a.gesture) {
       // Mao has arm transforms, not a VRM skeleton; names/ranges are checked at runtime.
       case 'wave': p.PartArmLA = 1 - envelope; p.PartArmLB = envelope; p.ParamArmLB01 = -8 * e; p.ParamArmLB02 = 8 * e; p.ParamArmLB03 = (-8 + 12 * Math.sin(u * Math.PI * 8)) * e; p.ParamHandLB = 10 * e; p.ParamAngleZ += 4 * e; break;
-      case 'amused': p.ParamEyeLSmile = p.ParamEyeRSmile = .65 * e; p.ParamBodyAngleY = Math.sin(u * Math.PI * 8) * 1.4 * e; p.ParamLeftShoulderUp = p.ParamRightShoulderUp = Math.sin(u * Math.PI * 8) * 2 * e; break;
+      case 'amused': p.ParamEyeLSmile = p.ParamEyeRSmile = .65 * e; p.ParamBodyAngleY = Math.sin(u * Math.PI * 8) * 3 * e; p.ParamLeftShoulderUp = p.ParamRightShoulderUp = Math.sin(u * Math.PI * 8) * 4 * e; break;
       case 'thinking': p.ParamEyeBallX = .45 * e; p.ParamAngleZ += 6 * e; p.ParamAngleY = 3 * e; break;
       case 'embarrassed': p.ParamCheek = .6 * e; p.ParamEyeBallX = -.5 * e; p.ParamAngleY = -5 * e; break;
       case 'tease': p.ParamAngleZ += 7 * e; p.ParamMouthUp = .55 * e; break;

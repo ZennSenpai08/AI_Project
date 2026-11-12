@@ -1,0 +1,8 @@
+import { _electron as electron } from 'playwright';
+import {resolve}from'node:path';
+const app=await electron.launch({args:['.'],cwd:process.cwd(),env:{...process.env,ZYRAH_TEST_DATA:resolve('.test-data/debug-voice-'+Date.now()),OFFLINE_ONLY:'true',CHAT_PROVIDER:'demo',TTS_PROVIDER:'omnivoice',NEURAL_TTS_EXE:resolve('speech/tools/omnivoice-vulkan/omnivoice-tts.exe'),NEURAL_TTS_DEVICE:'Vulkan1',STT_PROVIDER:'disabled',EMBEDDING_PROVIDER:'local',ZYRAH_OPEN_CHAT:'1'}});
+try{await app.firstWindow();let chat;for(let i=0;i<100;i++){chat=app.windows().find(p=>/\/$/.test(p.url()));if(chat)break;await new Promise(r=>setTimeout(r,100));}await chat.waitForSelector('#sessions button');
+await chat.evaluate(()=>{window.speechTrace=[];const f=window.fetch;window.fetch=async(...args)=>{const p=String(args[0]);if(p==='/api/speech')window.speechTrace.push({kind:'request',at:performance.now()});const r=await f(...args);if(p==='/api/speech')window.speechTrace.push({kind:'response',status:r.status});return r;};document.addEventListener('click',e=>{if(e.target.id)window.speechTrace.push({kind:'click',id:e.target.id});});});
+await chat.locator('#open-settings').click();await chat.locator('#open-audition').click();await chat.locator('#audition-play').click();
+for(let i=0;i<30;i++){await new Promise(r=>setTimeout(r,2000));const info=await chat.evaluate(async()=>{const b=await(await fetch('/api/bootstrap')).json();const d=await(await fetch('/api/runtime',{headers:{'X-Hiraya-Token':b.token}})).json();return {status:document.querySelector('#voice-status').textContent,toast:document.querySelector('#toast').textContent,trace:window.speechTrace,tts:d.tts};});console.log(JSON.stringify(info));if(info.status.startsWith('Speaking'))break;}
+}finally{await app.close();}

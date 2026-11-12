@@ -2,7 +2,7 @@
 
 ## Implemented application — 2026-11-12
 
-Direct local STT is now installed and tested. See [start here](README_START_HERE.md), [acceptance evidence](ACCEPTANCE_TESTS.md) and [integration roadmap](INTEGRATION_ROADMAP.md). Strict Offline Only is enforced for supported local paths; a complete offline LLM conversation remains an open gate.
+Local neural voice, explicit Tagalog STT, and playback-driven Live2D repairs are installed in this checkout. See [speech repair and auditions](updated-files/SPEECH_V2.md), [start here](README_START_HERE.md), [acceptance evidence](ACCEPTANCE_TESTS.md) and [integration roadmap](INTEGRATION_ROADMAP.md). Strict Offline Only is enforced for supported local paths; a complete offline LLM conversation remains an open gate.
 
 The runnable application is now in [updated-files](updated-files/README.md). It uses Electron, Node.js/SQLite and the supplied Mao Live2D model. Start from the repository root:
 
@@ -11,7 +11,7 @@ cd updated-files
 npm run desktop
 ```
 
-Implemented: floating character, separate chat, bounded facial/body reactions, tray/pin/shortcut/position controls, persistent history and memory, replaceable speech/chat adapters and hidden-state cleanup. Default chat remains a labeled scripted demo until a real provider is configured. Voice quality and real microphone acceptance remain external checks. See [progress](DEVELOPMENT_PROGRESS.md), [test evidence](updated-files/TEST_REPORT.md), [provider setup](updated-files/PROVIDER_SETUP.md), and [limitations](updated-files/KNOWN_LIMITATIONS.md).
+Implemented: floating character, separate chat, bounded facial/body reactions, tray/pin/shortcut/position controls, persistent history and memory, replaceable speech/chat adapters and hidden-state cleanup. Default chat remains a labeled scripted demo until a real provider is configured. Voice A/B WAVs exist and native preview/chat playback was tested; listening preference and real Tagalog microphone acceptance remain open. Old portable builds do not contain these repairs. See [progress](DEVELOPMENT_PROGRESS.md), [test evidence](updated-files/TEST_REPORT.md), [provider setup](updated-files/PROVIDER_SETUP.md), and [limitations](updated-files/KNOWN_LIMITATIONS.md).
 
 The following sections retain the original product specification; planned entries are requirements, not claims of verified implementation.
 

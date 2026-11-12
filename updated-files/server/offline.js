@@ -5,7 +5,7 @@ export function assertOfflineConfig(c) {
   // verifiably confined they are deliberately unavailable in strict mode.
   if (c.chatProvider !== 'demo') throw blocked('the configured conversation service has not been verified for downstream network isolation. Use demo for local UI checks or disable Offline Only explicitly.');
   if (!['faster-whisper', 'disabled'].includes(c.sttProvider)) throw blocked('select STT_PROVIDER=faster-whisper or disabled; browser recognition and external speech services are not allowed.');
-  if (!['browser', 'disabled'].includes(c.ttsProvider)) throw blocked('select a local device voice or TTS_PROVIDER=disabled; external speech services are not allowed.');
+  if (!['browser', 'disabled', 'omnivoice'].includes(c.ttsProvider)) throw blocked('select a local device voice or TTS_PROVIDER=disabled; external speech services are not allowed.');
   if (c.embeddingProvider !== 'local') throw blocked('cloud embeddings are prohibited. Select EMBEDDING_PROVIDER=local.');
 }
 export function assertNetworkAllowed(c, url) {

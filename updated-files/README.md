@@ -1,8 +1,8 @@
-# Current local speech and privacy update — 2026-11-12
+# Current neural voice, Tagalog and movement repair — 2026-11-12
 
-Direct faster-whisper recognition is now installed and tested in this checkout; private .env selects it. Use Record → Finish to obtain an editable draft. The model is a small multilingual test model; English spelling and Tagalog/Taglish quality need review. See [start here](../README_START_HERE.md), [acceptance tests](../ACCEPTANCE_TESTS.md), and [roadmap](../INTEGRATION_ROADMAP.md).
+Installed here: standalone OmniVoice Q4_K_M on the RTX 2050, two original versioned reference voices, explicit Filipino/English/automatic STT modes, local Dictate routing, visible listening/thinking/emotion postures and playback amplitude lip sync. **Listen to the A/B samples before choosing a voice; no human approval is claimed.** See [exact setup, audition procedure, evidence and limits](SPEECH_V2.md).
 
-OFFLINE_ONLY=true enforces fail-closed application networking, local embeddings, direct STT, and local device voices only. External loopback services and Ollama are currently refused because downstream isolation is unverified. A complete offline AI conversation is still an open gate; the permitted demo is scripted. Restart after configuration changes. No silent cloud fallback.
+Current private .env selects neural TTS and faster-whisper tiny. Speech can take 15–43 seconds in measured RTX runs; CPU is substantially slower. Missing neural files produce text with an explicit error, never the old OS voice. Strict Offline Only permits these owned local engines; unaudited proxies and real offline LLM chat remain blocked. Read replies aloud uses the same voice as auditions. Palette and microphone capture were preserved.
 
 # Zyrah desktop companion
 
@@ -42,7 +42,7 @@ Transparent frameless character and separate chat, click/drag threshold, alpha-b
 
 Zyrah's protected versioned character is characters/zyrah.json. Typed conversation connects to streaming OpenAI-compatible or Ollama adapters. SQLite persists history, source-linked approved memories and extractive older-message summaries. Memories support edit/delete/disable; forgotten source messages are excluded from future model context and summaries. Original chat stays visible until deleted. Conversation deletion also removes source-linked memories. Export and explicit data erasure are available.
 
-Mao performs bounded facial, gaze, breathing, head/body/shoulder and arm reactions. The greeting uses the rig's raised-arm pose and wrist motion; the model's supplied hand shapes did not yield a verified open-palm greeting. This remains an approximation. No unique Zyrah artwork or recorded laughter is claimed. See MODEL_SETUP.md.
+Mao performs bounded facial, gaze, breathing, head/body/shoulder and arm reactions. The greeting uses the rig's raised-arm pose and wrist motion; the model's supplied hand shapes did not yield a verified open-palm greeting. This remains an approximation. No unique Zyrah artwork is claimed. Model-generated laughter samples exist; their quality needs listening review. See MODEL_SETUP.md.
 
 Push-to-talk Record/Finish creates an editable transcript using configured STT. Hands-free uses bounded utterances with half-duplex capture to prevent self-transcription. Stop or Record interrupts; this is not acoustic full-duplex barge-in. Local/cloud buffered sentence audio drives actual-amplitude mouth movement. Device TTS has no amplitude access, so its mouth stays closed.
 

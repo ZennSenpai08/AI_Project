@@ -1,4 +1,10 @@
 export const auditionCases = [
+  ['Zyrah greeting', 'warm', 'Hi! Ako si Zyrah. Kumusta ang araw mo?'],
+  ['Thinking', 'curious', 'Sandali lang, iniisip ko pa kung paano natin aayusin ’yan.'],
+  ['Playful discovery', 'playful', 'Uy, gumagana na! Akala ko may isa na naman tayong bug.'],
+  ['Gentle concern', 'concerned', 'Okay lang mapagod. Gusto mo bang magpahinga muna o magkuwento?'],
+  ['Technical Taglish', 'calm', 'I checked the settings. Mukhang mali lang ang napiling microphone.'],
+  ['Time and plans', 'warm', 'Bukas natin ituloy, mga alas otso ng gabi.'],
   ['Casual English', 'warm', 'Hey, you made it. Take a breath. What was the best tiny moment of your day?'],
   ['Philippine English', 'warm', 'Let’s meet after lunch, then take the jeepney to the café near the barangay hall.'],
   ['Filipino', 'curious', 'Kumusta ang araw mo? Kung pagod ka, puwede muna tayong magpahinga. Hindi naman kailangang madaliin ang lahat.'],

@@ -2,13 +2,14 @@ import { contextualPerformance, demoReply, persona, replySchema, validateReply }
 import { readSSE } from './stream.js';
 import { groundedSuggestion } from './memory.js';
 import { assertNetworkAllowed, assertOfflineConfig } from './offline.js';
+import { NeuralTTS } from './neural-tts.js';
 import { LocalSTT } from './local-stt.js';
 
 const failure = (message, status = 502) => Object.assign(new Error(message), { status });
 export const escapeXml = text => text.replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[c]);
 
 export class Providers {
-  constructor(config, fetcher = fetch) { this.config = config; assertOfflineConfig(config); this.fetch = fetcher; this.localSTT = new LocalSTT(config); }
+  constructor(config, fetcher = fetch) { this.config = config; assertOfflineConfig(config); this.fetch = fetcher; this.localSTT = new LocalSTT(config); this.neuralTTS = new NeuralTTS(config); }
   async request(url, options, signal) {
     assertNetworkAllowed(this.config, url);
     let response;
@@ -59,23 +60,25 @@ export class Providers {
     try { const reply = contextualPerformance(validateReply(JSON.parse(message?.content)), text); reply.memorySuggestion = groundedSuggestion(reply.memorySuggestion, text); return { ...reply, usage: data.usage || null }; }
     catch { throw failure('The model returned an incomplete or invalid reply. Try again or choose a model with JSON support.'); }
   }
-  async transcribe(wav, signal) {
+  async transcribe(wav, signal, language = 'auto') {
     const c = this.config;
     if (c.sttProvider === 'disabled') throw failure('Speech recognition is disabled. Type a message or configure local STT.', 503);
-    if (c.sttProvider === 'faster-whisper') return this.localSTT.transcribe(wav, signal);
+    if (c.sttProvider === 'faster-whisper') return this.localSTT.transcribe(wav, signal, language);
     const local = c.sttProvider === 'local';
     if (!local && !c.openaiKey) throw failure('Cloud transcription needs OPENAI_API_KEY. Choose browser dictation or type instead.', 503);
     const form = new FormData();
     form.set('file', new Blob([wav], { type: 'audio/wav' }), 'speech.wav');
     form.set('model', local ? c.localSttModel : c.sttModel);
+    if (language !== 'auto') form.set('language', language === 'fil' ? 'tl' : 'en');
     form.set('prompt', 'Natural Filipino, English and Taglish conversation. Zyrah.');
     const r = await this.request(`${(local ? c.localSpeechBase : c.openaiBase).replace(/\/$/, '')}/audio/transcriptions`, { method: 'POST', headers: { Authorization: `Bearer ${local ? c.localSpeechKey || 'local' : c.openaiKey}` }, body: form }, signal);
     const result = await r.json();
     if (typeof result.text !== 'string' || result.text.length > 4000) throw failure('Invalid transcription response.');
     return result.text.trim();
   }
-  async speech(text, emotion, signal, speed = 1) {
+  async speech(text, emotion, signal, speed = 1, voiceId = 'zyrah-warm-v1', language = 'fil') {
     const c = this.config;
+    if (c.ttsProvider === 'omnivoice') return this.neuralTTS.speech(text, voiceId, language, signal);
     if (c.ttsProvider === 'disabled') throw failure('Speech output is disabled. The reply remains available as text.', 503);
     let response;
     if (c.ttsProvider === 'local') {

@@ -92,15 +92,19 @@ export class SpeechOutput {
   constructor(avatar, state) { this.avatar = avatar; this.state = state; this.generation = 0; }
   async unlock() {
     if (!this.context || this.context.state === 'closed') this.context = new AudioContext();
-    if (this.context.state === 'suspended') await this.context.resume();
+    if (this.context.state === 'suspended') {
+      let timer;
+      try { await Promise.race([this.context.resume(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Audio is paused by the device. Click Play sample or Send again to enable sound.')),5000);})]); }
+      finally { clearTimeout(timer); }
+    }
   }
   stop() {
     this.generation++; this.controller?.abort();
     globalThis.speechSynthesis?.cancel();
     if (this.audio) { this.audio.pause(); this.audio.removeAttribute('src'); this.audio.load(); this.audio = null; }
     if (this.url) { URL.revokeObjectURL(this.url); this.url = null; }
-    this.source?.disconnect(); this.source = null; this.analyser = null;
-    cancelAnimationFrame(this.frame); clearInterval(this.timer); clearTimeout(this.watchdog);
+    this.source?.disconnect(); this.analyser?.disconnect(); this.source = null; this.analyser = null;
+    cancelAnimationFrame(this.frame); clearTimeout(this.sampleTimer); clearInterval(this.timer); clearTimeout(this.watchdog);
     this.finish?.(); this.finish = null;
     this.avatar.update({ speaking: false, mouth: 0 });
   }
@@ -112,6 +116,7 @@ export class SpeechOutput {
       if (!globalThis.speechSynthesis) throw new Error('Speech synthesis is unavailable on this device.');
       const utterance = new SpeechSynthesisUtterance(text);
       const voices = speechSynthesis.getVoices();
+      if (settings.voice && !voices.some(v => v.voiceURI === settings.voice)) throw new Error('The selected device voice is not installed. Choose a voice explicitly; no fallback was used.');
       utterance.voice = voices.find(v => v.voiceURI === settings.voice) || voices.find(v => /^(fil|tl)(-|$)/i.test(v.lang)) || voices.find(v => /^en-PH/i.test(v.lang)) || null;
       if (config.offlineOnly) {
         const local = voices.filter(v => v.localService === true);
@@ -132,17 +137,17 @@ export class SpeechOutput {
       });
     } else {
       this.controller = new AbortController();
-      const response = await request('/api/speech', { method: 'POST', body: { text, emotion }, signal: this.controller.signal, raw: true });
+      const response = await request('/api/speech', { method: 'POST', body: { text, emotion, reaction: config.auditionReaction || null, turn:config.turn, segment:config.segment }, signal: this.controller.signal, raw: true });
       const blob = await response.blob(); if (generation !== this.generation) return;
       await this.unlock(); if (generation !== this.generation) return;
       this.url = URL.createObjectURL(blob); this.audio = new Audio(this.url);
       this.audio.volume = settings.volume ?? .85;
-      if (config.ttsProvider === 'openai') this.audio.playbackRate = settings.speed || 1;
+      if (['openai','omnivoice'].includes(config.ttsProvider)) this.audio.playbackRate = settings.speed || 1;
       this.source = this.context.createMediaElementSource(this.audio);
       this.analyser = this.context.createAnalyser(); this.analyser.fftSize = 512;
       this.source.connect(this.analyser); this.analyser.connect(this.context.destination);
       const wave = new Float32Array(this.analyser.fftSize);
-      const tick = () => { if (generation !== this.generation || !this.analyser) return; this.analyser.getFloatTimeDomainData(wave); this.avatar.update({ speaking: true, mouth: Math.min(1, rms(wave) * 8) }); this.frame = requestAnimationFrame(tick); };
+      const tick = () => { if (generation !== this.generation || !this.analyser) return; this.analyser.getFloatTimeDomainData(wave); this.avatar.update({ speaking: true, mouth: Math.min(1, rms(wave) * 8) }); this.sampleTimer = setTimeout(tick, 33); };
       await new Promise((resolve, reject) => {
         this.finish = resolve; this.audio.onended = resolve; this.audio.onerror = () => reject(new Error('Audio playback failed.'));
         this.watchdog = setTimeout(() => reject(new Error('Audio playback timed out.')), 90000);

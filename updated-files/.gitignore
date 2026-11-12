@@ -16,3 +16,5 @@ baseline-tests.txt
 speech/.venv/
 speech/models/
 __pycache__/
+
+speech/tools/

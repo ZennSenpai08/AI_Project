@@ -79,9 +79,10 @@ export class MaoAvatar {
   }
   update(state) {
     this.state = { ...this.state, ...state };
+    if (state.state) this.performance.setState(state.state);
     if (state.cancel !== undefined && state.cancel !== this.cancelToken) { this.cancelToken = state.cancel; this.performance.cancel(); this.cueToken = null; }
     if (state.cue && state.cue.id !== this.cueToken) {
-      this.cueToken = state.cue.id; this.performance.queue(state.cue, state.cue.id); this.performance.start(state.cue.id);
+      this.cueToken = state.cue.id; this.performance.queue(state.cue, state.cue.turn ?? state.cue.id, state.cue.segment || 0); this.performance.start(state.cue.turn ?? state.cue.id, state.cue.segment || 0);
     }
     if (state.emotion) this.performance.emotion = state.emotion;
     if (!this.model || this.disposed) return;

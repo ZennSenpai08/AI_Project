@@ -76,7 +76,7 @@ const recorder = new VoiceInput({
     desktop?.action('microphone', false);
     const epoch = state.epoch; const controller = new AbortController(); state.transcriptionController = controller;
     state.transcribing = true; voiceStatus('Transcribing your draft…');
-    try { const result = await request('/api/transcribe', { method: 'POST', body: blob, signal: controller.signal }); if (epoch === state.epoch) { $('#message').value = result.text; $('#message').focus(); toast('Transcript ready. Edit it, then press Send.'); } }
+    try { const result = await request('/api/transcribe', { method: 'POST', body: blob, signal: controller.signal }); if (epoch === state.epoch) { $('#message').value = result.text; $('#message').focus(); toast(result.text.trim() ? 'Transcript ready. Edit it, then press Send.' : 'No speech recognized. Check the language mode and record again.'); } }
     catch (e) { if (e.name !== 'AbortError' && epoch === state.epoch) toast(e.message, true); }
     finally { if (epoch === state.epoch) { state.transcribing = false; voiceStatus('Here with you'); } }
   },
@@ -100,7 +100,7 @@ async function toggleVoice() {
   state.voice = true; $('#voice-toggle').classList.add('active'); $('#voice-toggle').textContent = '■  End voice conversation';
   desktop?.action('microphone', true);
   $('#voice-help').textContent = 'Half-duplex voice · capture pauses during replies. Use Stop or Record to interrupt. ' + (['local','faster-whisper'].includes(state.config.sttProvider) ? 'Local transcription selected.' : 'Transcription may send audio to the selected provider.');
-  await input.start(state.config.cloudStt, state.settings.language, state.settings);
+  await input.start(state.config.cloudStt, state.settings.sttLanguage || 'fil', state.settings);
 }
 
 async function speak(text, emotion = 'warm', messageId = null, cue = cueFor(emotion)) {
@@ -110,17 +110,18 @@ async function speak(text, emotion = 'warm', messageId = null, cue = cueFor(emot
   const epoch = state.epoch; state.speaking = true; voiceStatus('Preparing voice…');
   if (messageId) state.playback = { id: messageId, chars: 0 };
   try {
+    let segmentIndex=0;
     for (const segment of speechSegments(text)) {
       if (epoch !== state.epoch) break;
-      await output.speak(segment, emotion, state.config, state.settings, request, () => {
-        if (epoch === state.epoch && !state.hidden) avatar.update({ cue: { ...cue, id: `${epoch}:${messageId || 'audition'}` } });
+      await output.speak(segment, emotion, {...state.config, turn:epoch, segment:segmentIndex, auditionReaction:segmentIndex===0 ? (state.config.auditionReaction || (state.config.ttsProvider === 'omnivoice' && cue.gesture === 'amused' ? 'laugh' : null)) : null}, state.settings, request, () => {
+        if (epoch === state.epoch && !state.hidden) avatar.update({ cue: { ...cue, gesture:segmentIndex===0?cue.gesture:'none', turn:epoch, segment:segmentIndex, id: `${epoch}:${messageId || 'audition'}:${segmentIndex}` } });
       });
-      if (epoch === state.epoch && state.playback) state.playback.chars += segment.length;
+      if (epoch === state.epoch && state.playback) state.playback.chars += segment.length; segmentIndex++;
     }
     if (epoch === state.epoch) acknowledgePlayback('completed');
   }
   catch (e) { if (epoch === state.epoch && e.name !== 'AbortError') { acknowledgePlayback('interrupted'); output.stop(); avatar.update({ emotion:'calm', cue:{ ...cueFor('calm'), id:`${epoch}:voice-error` } }); toast(`Voice: ${e.message}`, true); } }
-  finally { if (epoch === state.epoch) { state.speaking = false; voiceStatus('Here with you'); if (resumeVoice && state.voice && !state.hidden) await input.start(state.config.cloudStt, state.settings.language, state.settings); } }
+  finally { if (epoch === state.epoch) { state.speaking = false; voiceStatus('Here with you'); if (resumeVoice && state.voice && !state.hidden) await input.start(state.config.cloudStt, state.settings.sttLanguage || 'fil', state.settings); } }
 }
 
 function renderMessage(message, { provisional = false } = {}) {
@@ -223,7 +224,7 @@ async function send(text) {
       state.streamingNode?.remove(); state.streamingNode = null;
       $('#activity').textContent = 'Your message was not completed. It’s back in the draft below.'; toast(e.message, true);
     }
-  } finally { if (epoch === state.epoch) { state.busy = false; voiceStatus('Here with you'); if (state.voice && !state.hidden && !input.running) await input.start(state.config.cloudStt, state.settings.language, state.settings); } }
+  } finally { if (epoch === state.epoch) { state.busy = false; voiceStatus('Here with you'); if (state.voice && !state.hidden && !input.running) await input.start(state.config.cloudStt, state.settings.sttLanguage || 'fil', state.settings); } }
 }
 
 async function addMemory(content, kind, sourceId = null) {
@@ -253,13 +254,19 @@ function populateVoices() {
 }
 function renderSettings() {
   $('#memory-enabled').checked = state.settings.memoryEnabled; $('#speech-speed').value = state.settings.speed; $('#speech-volume').value = state.settings.volume; $('#silence').value = state.settings.silenceMs; $('#noise-threshold').value = state.settings.vadThreshold;
-  $('#language').value = state.settings.language; $('#auto-speak').checked = state.settings.autoSpeak; $('#show-avatar').checked = state.settings.avatar;
+  $('#neural-voice-setting').hidden = state.config.ttsProvider !== 'omnivoice';
+  $('#neural-voice').replaceChildren(...(state.config.neuralVoices || []).map(v => { const o=el('option','',v.name); o.value=v.id; return o; })); $('#neural-voice').value=state.settings.speechVoice;
+  $('#browser-voice').closest('.setting').hidden = state.config.ttsProvider !== 'browser';
+  $('#speech-runtime').textContent = `Voice: ${state.config.ttsProvider} / ${state.config.ttsProvider === 'omnivoice' ? 'OmniVoice Q4_K_M / '+state.settings.speechVoice : state.settings.voice || 'device default'}. ${state.config.ttsProvider === 'omnivoice' && !state.config.neuralVoiceReady ? 'Neural runtime/model missing; speech will fail with text fallback.' : ''}`;
+  request('/api/runtime').then(info=>{ $('#speech-diagnostics').textContent=JSON.stringify(info,null,2); }).catch(()=>{});
+  $('#speech-diagnostics').textContent=JSON.stringify({build:state.config.speechBuild,chat:state.config.chatProvider,stt:state.config.sttProvider,sttLanguage:state.settings.sttLanguage,tts:state.config.ttsProvider,voice:state.settings.speechVoice,fallback:'none',cache:'no-store'},null,2);
+  $('#stt-language').value = state.settings.sttLanguage || 'fil'; $('#language').value = state.settings.language; $('#auto-speak').checked = state.settings.autoSpeak; $('#show-avatar').checked = state.settings.avatar;
   $('.companion-card').classList.toggle('avatar-hidden', !state.settings.avatar); populateVoices();
   avatar.setVisible(state.settings.avatar);
   $('#provider-details').textContent = state.config.chatProvider === 'demo' ? 'You’re in the scripted offline demo. To enable real AI, set CHAT_PROVIDER=openai and OPENAI_API_KEY in .env, or use CHAT_PROVIDER=ollama with a local model. Restart the server after changes. Voice provider: ' + state.config.ttsProvider + '.' : `Conversation: ${state.config.chatProvider} / ${state.config.chatModel}. Voice: ${state.config.ttsProvider}. Change providers and your companion’s name in .env, then restart. Cloud voice quality and Filipino accent depend on the selected voice.`;
 }
 async function saveSettings(patch) {
-  if (state.voice) endVoice();
+  if (state.voice || patch.speechVoice || patch.voice || patch.speed) endVoice();
   try { state.settings = await request('/api/settings', { method: 'PATCH', body: patch }); renderSettings(); }
   catch (e) { renderSettings(); toast(e.message, true); }
 }
@@ -283,6 +290,8 @@ $('#open-memories').addEventListener('click', openMemories); $('#privacy-link').
 $('#open-settings').addEventListener('click', () => { renderSettings(); refreshUsage(); refreshDocuments(); $('#settings-dialog').showModal(); });
 document.querySelectorAll('.close-dialog').forEach(button => button.addEventListener('click', () => button.closest('dialog').close()));
 $('#memory-form').addEventListener('submit', async event => { event.preventDefault(); try { await addMemory($('#memory-content').value, $('#memory-kind').value); $('#memory-content').value = ''; } catch (e) { toast(e.message, true); } });
+$('#neural-voice').addEventListener('change', event => saveSettings({speechVoice:event.target.value}));
+$('#stt-language').addEventListener('change', event => { endVoice(); saveSettings({ sttLanguage:event.target.value }); });
 $('#language').addEventListener('change', event => saveSettings({ language: event.target.value }));
 $('#auto-speak').addEventListener('change', event => saveSettings({ autoSpeak: event.target.checked }));
 $('#show-avatar').addEventListener('change', event => saveSettings({ avatar: event.target.checked }));
@@ -314,10 +323,12 @@ $('#erase-data').addEventListener('click', async () => {
   try { endVoice(); await request('/api/data', { method: 'DELETE', body: { confirm: 'DELETE' } }); localStorage.removeItem('hiraya-session'); location.reload(); } catch (e) { toast(e.message, true); }
 });
 $('#dictate').addEventListener('click', () => {
+  // Use the selected STT adapter for drafts as well as voice conversations.
+  if (['faster-whisper','local','openai'].includes(state.config.sttProvider)) { $('#record').click(); return; }
   if (recognition) { recognition.stop(); return; }
   if (state.config.offlineOnly) { toast('Offline Only blocks browser dictation. Use Record with the application-owned local STT engine.'); return; }
   if (!Recognition) { toast('One-shot browser dictation is unavailable. Use voice conversation with cloud transcription, or type a message.', true); return; }
-  endVoice(); recognition = new Recognition(); recognition.lang = state.settings.language === 'en' ? 'en-PH' : 'fil-PH'; recognition.interimResults = true;
+  endVoice(); recognition = new Recognition(); recognition.lang = state.settings.sttLanguage === 'en' ? 'en-PH' : 'fil-PH'; recognition.interimResults = true;
   const existing = $('#message').value;
   recognition.onresult = event => { $('#message').value = [existing, Array.from(event.results).map(result => result[0].transcript).join(' ')].filter(Boolean).join(' ').slice(0, 4000); };
   recognition.onerror = event => { if (event.error !== 'aborted') toast(`Dictation: ${event.error}. You can still type.`, true); };
@@ -343,7 +354,7 @@ $('#record').addEventListener('click', async () => {
   endVoice(); recognition?.abort(); state.recording = true; $('#record').textContent = '■ Finish';
   desktop?.action('microphone', true);
   toast('Recording up to 20 seconds. Press Finish, then review your transcript.');
-  await recorder.start(true, state.settings.language, { manual: true });
+  await recorder.start(true, state.settings.sttLanguage || 'fil', { manual: true });
 });
 $('#mute').addEventListener('click', () => { state.muted = !state.muted; desktop?.action('mute', state.muted); if (state.muted) interrupt(); $('#mute').textContent = state.muted ? 'Unmute' : 'Mute'; $('#mute').setAttribute('aria-pressed', String(state.muted)); });
 $('#rename-chat').addEventListener('click', () => { if (state.session) { $('#session-title').value = state.session.title; $('#rename-dialog').showModal(); } });
@@ -369,10 +380,11 @@ $('#open-audition').addEventListener('click', () => { endVoice(); selectAudition
 $('#audition-case').addEventListener('change', selectAudition);
 $('#audition-score').addEventListener('input', event => { notes[$('#audition-case').value] = event.target.value; });
 $('#audition-play').addEventListener('click', () => { interrupt(); output.unlock().catch(() => {}); speak($('#audition-text').value, auditionCases[Number($('#audition-case').value)][1]); });
+$('#audition-laugh').addEventListener('click', async () => { if(state.config.ttsProvider !== 'omnivoice') { toast('This engine has no verified laughter control.'); return; } interrupt(); state.config.auditionReaction='laugh'; try { await speak($('#audition-text').value,'playful'); } finally { delete state.config.auditionReaction; } });
 $('#audition-stop').addEventListener('click', interrupt);
 $('#audition-dialog').addEventListener('close', interrupt);
 $('#audition-export').addEventListener('click', () => {
-  const result = { date: new Date().toISOString(), provider: state.config.ttsProvider, voice: state.settings.voice, ratings: Object.entries(notes).map(([index, note]) => ({ sample: auditionCases[index][0], note })) };
+  const result = { date: new Date().toISOString(), provider: state.config.ttsProvider, model:state.config.ttsProvider==='omnivoice'?'OmniVoice-Q4_K_M':null, voice:state.config.ttsProvider==='omnivoice'?state.settings.speechVoice:state.settings.voice, ratings: Object.entries(notes).map(([index, note]) => ({ sample: auditionCases[index][0], note })) };
   const url = URL.createObjectURL(new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' })); const link = el('a'); link.href = url; link.download = 'hiraya-voice-audition.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 

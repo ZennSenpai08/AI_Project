@@ -1,3 +1,11 @@
+# Focused voice/Tagalog/movement evidence — 2026-11-12
+
+Current source: 70 deterministic tests, five Edge browser cases, three existing Windows native cases and one real neural-speech native case passed. The last case used actual OmniVoice Q4/RTX playback, floating amplitude mouth movement, profile persistence, Stop, hide during synthesis/playback and mic-off restoration; it used scripted chat and fake microphone input. Playable A/B auditions and rendered pose screenshots exist. Human preference, real Filipino/Taglish microphone references, physical device/desktop checks and real LLM acceptance remain unverified. No fresh portable build was produced in this focused repair.
+
+Exact latest commands, measured synthesis times, failed intermediate runs and final evidence: [TEST_REPORT](updated-files/TEST_REPORT.md). Runtime setup, original voice provenance, in-app audition and model limitations: [SPEECH_V2](updated-files/SPEECH_V2.md).
+
+The following table records the previous phase. Its older test counts and absent TTS status are historical; the focused evidence above supersedes them.
+
 # Acceptance evidence — 2026-11-12
 
 Run in updated-files. Tests use disposable databases; never point tests at AppData user data.

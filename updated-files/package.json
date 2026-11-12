@@ -21,7 +21,11 @@
     "download:core": "node scripts/download-core.js",
     "audition:local": "node --env-file-if-exists=.env scripts/audition-local.js",
     "benchmark": "node scripts/benchmark.js",
-    "test:stt": "node scripts/test-local-stt.js"
+    "test:stt": "node scripts/test-local-stt.js",
+    "audition:neural": "node --env-file-if-exists=.env scripts/audition-neural.js",
+    "audition:index": "node scripts/audition-index.js",
+    "test:speech-v2": "node --test tests/native/speech-v2.test.js",
+    "diagnose:voice": "node scripts/debug-speech.js"
   },
   "main": "desktop/main.js",
   "devDependencies": {

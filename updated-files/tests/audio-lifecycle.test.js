@@ -55,3 +55,12 @@ test('a late disconnect from an old microphone cannot stop newly restored captur
   try{await input.start(true,'auto');const oldEnded=tracks[0].onended;input.stop();assert.equal(tracks[0].onended,null);await input.start(true,'auto');oldEnded();assert.equal(input.running,true);}
   finally {input.stop();if(previousNavigator)Object.defineProperty(globalThis,'navigator',previousNavigator);else delete globalThis.navigator;globalThis.AudioContext=previousContext;globalThis.AudioWorkletNode=previousNode;}
 });
+
+test('a suspended output device cannot leave voice preparation waiting forever',async t=>{
+  const previous=globalThis.AudioContext;t.after(()=>{globalThis.AudioContext=previous;});
+  t.mock.timers.enable({apis:['setTimeout']});
+  globalThis.AudioContext=class {constructor(){this.state='suspended';}resume(){return new Promise(()=>{});}};
+  const output=new SpeechOutput(avatar(),()=>{});
+  const rejected=assert.rejects(output.unlock(),/Click Play sample or Send again/);
+  t.mock.timers.tick(5000);await rejected;
+});

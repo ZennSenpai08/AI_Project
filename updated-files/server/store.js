@@ -86,7 +86,7 @@ export class Store {
       if (message.id === memory.source_id || message.content.toLowerCase().includes(memory.content.toLowerCase())) this.db.prepare('INSERT OR IGNORE INTO summary_exclusions VALUES(?)').run(message.id);
     }
   }
-  settings() { return { language: 'auto', autoSpeak: false, voice: '', avatar: true, memoryEnabled: true, speed: 1, volume: .85, silenceMs: 850, vadThreshold: .016, ...(JSON.parse(this.db.prepare('SELECT json FROM settings WHERE id=1').get()?.json || '{}')) }; }
+  settings() { return { speechVoice:'zyrah-warm-v1', sttLanguage: 'fil', language: 'auto', autoSpeak: false, voice: '', avatar: true, memoryEnabled: true, speed: 1, volume: .85, silenceMs: 850, vadThreshold: .016, ...(JSON.parse(this.db.prepare('SELECT json FROM settings WHERE id=1').get()?.json || '{}')) }; }
   saveSettings(settings) { this.db.prepare('INSERT INTO settings VALUES(1,?) ON CONFLICT(id) DO UPDATE SET json=excluded.json').run(JSON.stringify(settings)); return this.settings(); }
   export() { return { version: 2, exportedAt: new Date().toISOString(), settings: this.settings(), memories: this.memories(), sessions: this.sessions().map(s => ({ ...s, messages: this.messages(s.id) })), documents: this.documents().map(d => ({ ...d, chunks: this.documentChunks(d.id) })), usage: this.usage() }; }
   clear() { this.db.exec('BEGIN; DELETE FROM messages; DELETE FROM sessions; DELETE FROM memories; DELETE FROM documents; DELETE FROM summaries; DELETE FROM settings; DELETE FROM metrics; COMMIT; PRAGMA wal_checkpoint(TRUNCATE);'); }

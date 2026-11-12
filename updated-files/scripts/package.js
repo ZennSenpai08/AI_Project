@@ -9,8 +9,9 @@ mkdirSync(target,{recursive:true});cpSync('node_modules/electron/dist',target,{r
 renameSync(join(target,'electron.exe'),join(target,'Zyrah.exe'));
 const destination=join(target,'resources/app');mkdirSync(destination,{recursive:true});
 for(const name of ['desktop','server','public','characters'])cpSync(name,join(destination,name),{recursive:true});
-mkdirSync(join(destination,'speech'),{recursive:true});for(const file of ['worker.py','setup-model.py','requirements-lock.txt'])cpSync('speech/'+file,join(destination,'speech',file));
-for(const name of ['README.md','.env.example','ASSET_LICENSES.md','PROVIDER_SETUP.md','KNOWN_LIMITATIONS.md','TEST_REPORT.md','MODEL_SETUP.md','ARCHITECTURE.md','CHARACTER_DESIGN.md'])if(existsSync(name))cpSync(name,join(destination,name));
+mkdirSync(join(destination,'speech'),{recursive:true});for(const file of ['worker.py','setup-model.py','requirements-lock.txt','setup-neural.ps1','build-requirements.txt'])cpSync('speech/'+file,join(destination,'speech',file));
+cpSync('speech/voices',join(destination,'speech/voices'),{recursive:true});
+for(const name of ['SPEECH_V2.md','README.md','.env.example','ASSET_LICENSES.md','PROVIDER_SETUP.md','KNOWN_LIMITATIONS.md','TEST_REPORT.md','MODEL_SETUP.md','ARCHITECTURE.md','CHARACTER_DESIGN.md'])if(existsSync(name))cpSync(name,join(destination,name));
 for(const name of ['README_START_HERE.md','INTEGRATION_ROADMAP.md','ACCEPTANCE_TESTS.md'])if(existsSync('../'+name))cpSync('../'+name,join(destination,name));
 cpSync('../mao_en/runtime',join(destination,'mao_en/runtime'),{recursive:true});cpSync('../mao_en/ReadMe.txt',join(destination,'mao_en/ReadMe.txt'));
 writeFileSync(join(destination,'package.json'),JSON.stringify({name:'zyrah-companion',version:'1.0.0',private:true,type:'module',main:'desktop/main.js'},null,2));

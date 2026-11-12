@@ -1,3 +1,15 @@
+# Current focused repair: voice, Tagalog recognition and movement — 2026-11-12
+
+- [x] Trace actual microphone/worklet → STT → chat → segmentation → TTS → playback → renderer path and inspect saved settings without altering user records.
+- [x] Replace active browser voice with installed local OmniVoice Q4_K_M; build Vulkan runtime, original fixed reference profiles A/B, six identical lines plus laughter for each; retain reconstructed OS-default comparison samples.
+- [x] Add separate STT language preference (default Filipino → Whisper tl/transcribe), preserve editable raw drafts and route local Dictate through the same adapter. Compare tiny/base on explicitly synthetic fixtures.
+- [x] Strengthen actual Mao face/posture/shoulder reactions, listening/thinking states, playback amplitude lip sync and timer sampling for hidden chat. Clear null cues across desktop IPC and supersede owned synthesis safely.
+- [x] Finish native post-hide isolation and checks: 70 deterministic, five Edge, three desktop and one actual-neural native test passed. Native speech used the real renderer signal and explicit audio activation; latest passing log is artifacts/native-speech-v2-final2.log. Current-source launcher executed successfully; the running Zyrah main/renderer paths were verified as this updated-files source with normal AppData (no test path). Default voice A and Filipino STT preferences were confirmed read-only. Human listening and real microphone acceptance remain open.
+
+70 deterministic tests, five Edge cases, three existing desktop cases and one real-neural Windows case passed. Setup-neural.ps1 -Offline passed against installed tools/hashes (fresh-machine full setup unverified). No human voice approval or real Tagalog microphone reference set exists. Details, hardware measurements, exact paths, candidate evaluation and limitations: updated-files/SPEECH_V2.md. Existing palette/capture worklet, AppData SQLite, unrelated assets and credentials were preserved. New speech output is provisional and can be slow; no cloud voice fallback or paid service was introduced.
+
+The entries below record previous phases and may describe older voice/provider defaults; the focused repair and SPEECH_V2.md supersede them for speech.
+
 ## Local STT and offline phase — 2026-11-12
 
 Audited current Git changes, actual Electron/runtime dependencies, entry points, tests and existing AppData SQLite/WAL files without modifying user records. Optional roadmap/acceptance/start-here files were absent and are now created. Baseline 56 tests passed.

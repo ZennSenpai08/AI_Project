@@ -1,3 +1,9 @@
+# Focused speech repair delivered — 2026-11-12
+
+Standalone OmniVoice Q4_K_M is installed with two original fixed reference profiles and 14 local audition WAVs; it is the active TTS provider in this checkout. VoiceStudio remains optional/uninstalled. VoxCPM2 was evaluated but not downloaded/quality-auditioned on this 4 GB GPU. Explicit tl/transcribe STT and local Dictate routing replace automatic-only recognition. Playback drives enhanced actual Mao poses and amplitude mouth motion. Native preview/chat, cancellation/hide and restart persistence passed. Human voice preference, real Tagalog microphone quality and a verified real LLM remain open. See updated-files/SPEECH_V2.md and ACCEPTANCE_TESTS.md. Optional advanced services below remain deferred.
+
+The following sections retain earlier phase context; their earlier absent-TTS status is superseded by this focused repair.
+
 # Zyrah integration roadmap — 2026-11-12
 
 ## Current foundation and scope
@@ -15,7 +21,7 @@ This phase prioritizes direct local STT and fail-closed offline privacy. Python 
 ## Core gates still open
 
 1. Configure and verify a real local LLM. Strict Offline Only currently refuses Ollama and other external services because their downstream network isolation has not been verified. It permits the labeled scripted demo for UI tests, not real offline conversation. Do not bypass this with a self-attestation checkbox.
-2. Audition a permitted original voice on English/Filipino/Taglish samples; verify expressive laughter, accent and resource use. Existing Windows voices are fallback test voices. No exact creator cloning is authorized.
+2. Listen to the generated A/B auditions and approve or reject a voice; verify accent, Taglish and laughter. OS speech is an explicitly configured legacy provider, never an automatic fallback. No creator cloning is authorized.
 3. Human microphone/noise/disconnection, physical window/monitor/hotkey tests and a truly disconnected complete conversation remain unverified.
 
 ## Independently evaluated advanced services — all deferred, no adapters enabled

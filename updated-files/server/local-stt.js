@@ -8,7 +8,8 @@ export class LocalSTT {
   status() {
     return { configured: this.config.sttProvider === 'faster-whisper', modelReady: Boolean(this.config.whisperModelPath && ['model.bin','config.json','tokenizer.json'].every(f => existsSync(resolve(this.config.whisperModelPath, f)))), running: Boolean(this.child), engine: 'faster-whisper', network: 'disabled' };
   }
-  transcribe(wav, signal) {
+  transcribe(wav, signal, language = 'auto') {
+    if (!['fil','en','auto'].includes(language)) return Promise.reject(new Error('Invalid recognition language.'));
     if (signal?.aborted) return Promise.reject(signal.reason);
     if (this.pending) return Promise.reject(Object.assign(new Error('Transcription is busy. Stop the current recording before starting another.'), { status: 409 }));
     if (!this.status().modelReady) return Promise.reject(Object.assign(new Error('Local STT model is missing. Run the explicit speech setup and set WHISPER_MODEL_PATH to its downloaded model directory.'), { status: 503 }));
@@ -28,7 +29,7 @@ export class LocalSTT {
           if (!this.pending || result.id !== this.pending.id) continue;
           if (result.error) this.complete(new Error('Local STT could not load or transcribe. Check speech dependencies and the complete model directory.'));
           else if (typeof result.text !== 'string' || result.text.length > 4000) this.stop(new Error('Local STT returned invalid text.'));
-          else this.complete(null, result.text.trim());
+          else { this.diagnostics = result.diagnostics || null; this.complete(null, result.text.trim()); }
         }
       });
       child.once('error', () => { if (this.child === child) this.stop(new Error('Local speech Python could not start. Run speech setup and configure WHISPER_PYTHON.')); });
@@ -41,7 +42,7 @@ export class LocalSTT {
       this.pending = { id: ++this.serial, resolve: resolveResult, reject, timeout, signal, cancel };
       signal?.addEventListener('abort', cancel, { once:true });
       if (signal?.aborted) { cancel(); return; }
-      this.child.stdin.write(JSON.stringify({ id:this.pending.id, audio:wav.toString('base64') })+'\n');
+      this.child.stdin.write(JSON.stringify({ id:this.pending.id, audio:wav.toString('base64'), language: language === 'fil' ? 'tl' : language === 'en' ? 'en' : null })+'\n');
     });
   }
   complete(error, text) { const p = this.pending; if (!p) return; this.pending = null; clearTimeout(p.timeout); p.signal?.removeEventListener('abort', p.cancel); if (error) p.reject(error); else p.resolve(text); }

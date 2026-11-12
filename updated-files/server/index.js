@@ -2,7 +2,8 @@ import { createServer } from 'node:http';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, extname } from 'node:path';
+import { dirname, join, extname, basename } from 'node:path';
+import { neuralVoices } from './neural-tts.js';
 import { configFromEnv } from './config.js';
 import { Store } from './store.js';
 import { Providers } from './providers.js';
@@ -36,7 +37,7 @@ export function createApp(config, { store = new Store(config.dataDir), providers
   const token = randomBytes(32).toString('hex');
   const active = new Map();
   const requests = new Set();
-  const cancelAll = () => { providers.localSTT?.stop(); for (const controller of requests) controller.abort(); };
+  const cancelAll = () => { providers.localSTT?.stop(); providers.neuralTTS?.stop(); for (const controller of requests) controller.abort(); };
   const embeddings = new EmbeddingProvider(config, providers, store);
   const avatarAssets = new AvatarAssets({ provider: config.avatarProvider });
   let rateCount = 0; let rateStart = Date.now();
@@ -73,7 +74,7 @@ export function createApp(config, { store = new Store(config.dataDir), providers
         res.end(req.method === 'HEAD' ? undefined : data); return;
       }
       if (req.method === 'GET' && path === '/api/bootstrap') {
-        json(res, 200, { token, config: { appName: config.appName, characterName: config.characterName, chatProvider: config.chatProvider, chatModel: config.chatProvider === 'ollama' ? config.ollamaModel : config.chatModel, ttsProvider: config.ttsProvider, cloudStt: !['browser','disabled'].includes(config.sttProvider), sttProvider: config.sttProvider, offlineOnly: config.offlineOnly, localStt: providers.localSTT?.status() }, settings: store.settings(), sessions: store.sessions(), memories: store.memories() }); return;
+        json(res, 200, { token, config: { appName: config.appName, characterName: config.characterName, chatProvider: config.chatProvider, chatModel: config.chatProvider === 'ollama' ? config.ollamaModel : config.chatModel, ttsProvider: config.ttsProvider, cloudStt: !['browser','disabled'].includes(config.sttProvider), sttProvider: config.sttProvider, offlineOnly: config.offlineOnly, localStt: providers.localSTT?.status(), speechBuild:'speech-v2', neuralVoiceReady:providers.neuralTTS?.ready(), neuralVoices:neuralVoices.map(({id,name})=>({id,name})) }, settings: store.settings(), sessions: store.sessions(), memories: store.memories() }); return;
       }
       const supplied = Buffer.from(req.headers['x-hiraya-token'] || '');
       if (supplied.length !== token.length || !timingSafeEqual(supplied, Buffer.from(token))) throw error('Session expired. Reload this page.', 403);
@@ -81,6 +82,7 @@ export function createApp(config, { store = new Store(config.dataDir), providers
         if (Date.now() - rateStart > 60000) { rateCount = 0; rateStart = Date.now(); }
         if (++rateCount > 100) throw error('Too many requests. Please wait a minute.', 429);
       }
+      if (req.method === 'GET' && path === '/api/runtime') { json(res,200,{build:'speech-v2',entry:config.runtimeEntry || 'node server',stt:{provider:config.sttProvider,model:basename(config.whisperModelPath || config.sttModel),language:store.settings().sttLanguage,last:providers.localSTT?.diagnostics || null},tts:{synthesizing:Boolean(providers.neuralTTS?.children.size),provider:config.ttsProvider,backend:config.neuralTtsDevice,model:config.ttsProvider === 'omnivoice' ? basename(config.neuralTtsModel) : config.ttsModel,voice:store.settings().speechVoice,last:providers.neuralTTS?.last || null,fallback:'none',audioCache:false},avatar:{model:'Mao PRO Live2D',controller:'performance-v2',mouth:'playback amplitude'}}); return; }
       if (req.method === 'GET' && path === '/api/health') { json(res, 200, { ok: true }); return; }
       if (path === '/api/sessions' && req.method === 'POST') { if (store.sessions().length >= 200) throw error('Conversation limit reached. Delete an old conversation first.'); json(res, 201, store.createSession()); return; }
       if (path === '/api/sessions' && req.method === 'GET') { json(res, 200, store.sessions()); return; }
@@ -145,6 +147,8 @@ export function createApp(config, { store = new Store(config.dataDir), providers
         const body = await readJson(req); const settings = store.settings();
         for (const [key, value] of Object.entries(body)) {
           if (!(key in settings)) throw error('Unknown setting.');
+          if (key === 'speechVoice' && !neuralVoices.some(v=>v.id===value)) throw error('Invalid neural voice.');
+          if (key === 'sttLanguage' && !['fil','en','auto'].includes(value)) throw error('Invalid recognition language.');
           if (key === 'language' && !['auto', 'en', 'fil', 'taglish'].includes(value)) throw error('Invalid language.');
           if (['autoSpeak', 'avatar', 'memoryEnabled'].includes(key) && typeof value !== 'boolean') throw error('Invalid setting type.');
           const ranges = { speed: [.7, 1.3], volume: [0, 1], silenceMs: [400, 2000], vadThreshold: [.005, .1] };
@@ -159,20 +163,26 @@ export function createApp(config, { store = new Store(config.dataDir), providers
         const wav = await readBody(req, 3_000_000);
         if (wav.length < 44 || wav.toString('ascii', 0, 4) !== 'RIFF' || wav.toString('ascii', 8, 12) !== 'WAVE') throw error('Invalid WAV recording.');
         store.reserveUsage(config); const started = performance.now();
-        const transcript = await providers.transcribe(wav, abort.signal);
+        const sttLanguage=store.settings().sttLanguage;
+        const transcript = await providers.transcribe(wav, abort.signal, sttLanguage);
         const seconds = (wav.length - 44) / Math.max(1, wav.readUInt32LE(28)); store.recordUsage(0, seconds);
         const latencyMs = Math.round(performance.now() - started); store.metric(null, 'stt_ms', latencyMs);
-        json(res, 200, { text: transcript, latencyMs }); return;
+        json(res, 200, { text: transcript, latencyMs, recognition: { provider:config.sttProvider, language:sttLanguage, details:providers.localSTT?.diagnostics || null } }); return;
       }
       if (path === '/api/speech' && req.method === 'POST') {
         const body = await readJson(req); const text = spokenText(textField(body.text, 4000, 'Speech'));
         if (!text) throw error('No speakable text.');
         if (!emotions.includes(body.emotion)) throw error('Invalid emotion.');
+        for (const key of ['turn','segment']) if (body[key] !== undefined && (!Number.isSafeInteger(body[key]) || body[key] < 0)) throw error('Invalid speech timing identifier.');
         store.reserveUsage(config, text.length); const started = performance.now();
-        const audio = await providers.speech(text, body.emotion, abort.signal, store.settings().speed);
+        if (body.reaction !== undefined && body.reaction !== null && body.reaction !== 'laugh') throw error('Invalid speech reaction.');
+        if (body.reaction && config.ttsProvider !== 'omnivoice') throw error('This engine does not expose a supported laughter control.');
+        const synthesisText = body.reaction === 'laugh' ? '[laughter] ' + text : text;
+        const speechSettings=store.settings();
+        const audio = await providers.speech(synthesisText, body.emotion, abort.signal, speechSettings.speed, speechSettings.speechVoice, speechSettings.language);
         store.metric(null, 'tts_ready_ms', Math.round(performance.now() - started));
         if (abort.signal.aborted) return;
-        res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store' }); res.end(audio); return;
+        res.writeHead(200, { 'Content-Type': config.ttsProvider === 'omnivoice' ? 'audio/wav' : 'audio/mpeg', 'Cache-Control': 'no-store', 'X-Zyrah-Turn':String(body.turn ?? 0), 'X-Zyrah-Segment':String(body.segment ?? 0), 'X-Zyrah-Synthesis-Ms':String(providers.neuralTTS?.last?.synthesisMs || Math.round(performance.now()-started)), 'X-Zyrah-TTS-Provider':config.ttsProvider, 'X-Zyrah-TTS-Voice':config.ttsProvider === 'omnivoice' ? speechSettings.speechVoice : 'configured-provider-voice' }); res.end(audio); return;
       }
       if (path === '/api/export' && req.method === 'GET') { json(res, 200, store.export()); return; }
       if (path === '/api/usage' && req.method === 'GET') { json(res, 200, { ...store.usage(), requestLimit: config.dailyRequests, speechCharacterLimit: config.dailySpeechChars, costEstimate: null, costNote: 'No pricing assumptions configured. Application reservations are not provider billing.' }); return; }
